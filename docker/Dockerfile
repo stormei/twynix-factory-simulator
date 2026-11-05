@@ -5,6 +5,7 @@ COPY package*.json ./
 COPY apps ./apps
 COPY packages ./packages
 COPY examples ./examples
+COPY scripts ./scripts
 COPY tests ./tests
 COPY tsconfig.json angular.json vitest.config.ts playwright.config.ts ./
 RUN npm ci --legacy-peer-deps

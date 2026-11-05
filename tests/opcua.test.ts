@@ -14,7 +14,7 @@ import {
 } from "node-opcua";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { X509Certificate } from "node:crypto";
-import {hostname} from "node:os";
+import { hostname } from "node:os";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Simulation } from "@twynix/simulation-core";
@@ -169,9 +169,9 @@ it("production profile requires encryption, trusted certificates and authenticat
     e.endpointDescriptions(),
   );
   expect(
-    endpoints.filter(e=>e.securityMode!==MessageSecurityMode.None).every(
-      (e) => e.securityMode === MessageSecurityMode.SignAndEncrypt,
-    ),
+    endpoints
+      .filter((e) => e.securityMode !== MessageSecurityMode.None)
+      .every((e) => e.securityMode === MessageSecurityMode.SignAndEncrypt),
   ).toBe(true);
   const client = OPCUAClient.create({
     clientCertificateManager: cm,

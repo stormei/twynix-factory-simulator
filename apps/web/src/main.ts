@@ -113,7 +113,13 @@ export class App {
           : {
               ...d,
               states: { ...old.states, ...d.states },
-              events: [...old.events, ...d.events].slice(-200),
+              events: [
+                ...new Map(
+                  [...old.events, ...d.events].map((e) => [e.seq, e]),
+                ).values(),
+              ]
+                .sort((a, b) => a.seq - b.seq)
+                .slice(-200),
             },
       );
       if (old && d.revision !== old.revision)
@@ -151,10 +157,6 @@ export class App {
   }
   async commit(before: Project) {
     try {
-      if (this.runtime()?.status === "running") {
-        this.project.set(before);
-        throw Error("Pause before editing the process.");
-      }
       const p = await this.api<Project>("project", this.project());
       this.undoStack.push(before);
       this.redoStack = [];

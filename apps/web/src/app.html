@@ -85,6 +85,7 @@
     @for(entry of filtered();track
     entry[0]){@if(entry[1].category===category){<button
       class="library-item"
+      [attr.aria-label]="entry[1].name"
       draggable="true"
       (dragstart)="startLibrary($event,entry[0])"
       (dblclick)="add($any(entry[0]))"

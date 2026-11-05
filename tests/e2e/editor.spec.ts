@@ -93,11 +93,44 @@ test("editor and headless runtime work end to end", async ({
   await reconnect.close();
 });
 
-test('native drag/drop, typed port connections, undo, and rejected edits',async({page,request})=>{
- await request.post('/api/control',{data:{action:'stop'}});await page.goto('/');await expect(page.getByText('Runtime connected',{exact:true})).toBeVisible();await page.getByRole('button',{name:'＋ New',exact:true}).click();await expect(page.locator('g[equipmentSymbol]')).toHaveCount(0);
- const canvas=page.locator('svg.canvas');await page.getByRole('button',{name:'Water source',exact:true}).dragTo(canvas,{targetPosition:{x:150,y:200}});await expect(page.locator('g[equipmentSymbol]')).toHaveCount(1);await page.getByRole('button',{name:'Centrifugal pump',exact:true}).dragTo(canvas,{targetPosition:{x:400,y:200}});await expect(page.locator('g[equipmentSymbol]')).toHaveCount(2);
- const source=page.locator('g[equipmentSymbol]').nth(0),pump=page.locator('g[equipmentSymbol]').nth(1);await source.locator('.port').click();await pump.locator('.port').first().click();await expect(page.locator('path.connection')).toHaveCount(1);await expect.poll(async()=> (await(await request.get('/api/project')).json()).connections.length).toBe(1);
- // A second output-to-output connection must roll back without disturbing the valid edge.
- await pump.locator('.port').last().click();await source.locator('.port').click();await expect(page.locator('footer')).toContainText('Incompatible ports');await expect(page.locator('path.connection')).toHaveCount(1);
- await page.getByRole('button',{name:'↶',exact:true}).click();await expect(page.locator('path.connection')).toHaveCount(0);await page.getByRole('button',{name:'↷',exact:true}).click();await expect(page.locator('path.connection')).toHaveCount(1);
+test("native drag/drop, typed port connections, undo, and rejected edits", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/control", { data: { action: "stop" } });
+  await page.goto("/");
+  await expect(
+    page.getByText("Runtime connected", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "＋ New", exact: true }).click();
+  await expect(page.locator("g[equipmentSymbol]")).toHaveCount(0);
+  const canvas = page.locator("svg.canvas");
+  await page
+    .getByRole("button", { name: "Water source", exact: true })
+    .dragTo(canvas, { targetPosition: { x: 150, y: 200 } });
+  await expect(page.locator("g[equipmentSymbol]")).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Centrifugal pump", exact: true })
+    .dragTo(canvas, { targetPosition: { x: 400, y: 200 } });
+  await expect(page.locator("g[equipmentSymbol]")).toHaveCount(2);
+  const source = page.locator("g[equipmentSymbol]").nth(0),
+    pump = page.locator("g[equipmentSymbol]").nth(1);
+  await source.locator(".port").click();
+  await pump.locator(".port").first().click();
+  await expect(page.locator("path.connection")).toHaveCount(1);
+  await expect
+    .poll(
+      async () =>
+        (await (await request.get("/api/project")).json()).connections.length,
+    )
+    .toBe(1);
+  // A second output-to-output connection must roll back without disturbing the valid edge.
+  await pump.locator(".port").last().click();
+  await source.locator(".port").click();
+  await expect(page.locator("footer")).toContainText("Incompatible ports");
+  await expect(page.locator("path.connection")).toHaveCount(1);
+  await page.getByRole("button", { name: "↶", exact: true }).click();
+  await expect(page.locator("path.connection")).toHaveCount(0);
+  await page.getByRole("button", { name: "↷", exact: true }).click();
+  await expect(page.locator("path.connection")).toHaveCount(1);
 });
