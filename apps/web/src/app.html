@@ -1,0 +1,381 @@
+<header class="titlebar">
+  <a class="brand" href="/" aria-label="Twynix home"
+    ><span class="brandmark">◈</span> TWYNIX<span class="brand-divider"></span
+    ><span class="product">FACTORY SIMULATOR</span></a
+  >
+  <div class="project-title">
+    <span class="muted">PROJECT /</span
+    ><button (click)="rename()">
+      {{project()?.name || 'Connecting to runtime…'}}
+      <span class="muted">⌄</span>
+    </button>
+  </div>
+  <span class="version"
+    >LOCAL WORKSPACE <span class="status-dot" [class.good]="connected()"></span
+  ></span>
+</header>
+<nav class="toolbar">
+  <div class="tools">
+    <button mat-button (click)="newProject()">＋ New</button
+    ><button mat-button (click)="openList()">Open</button
+    ><button mat-button (click)="save()">Save</button
+    ><span class="divider"></span
+    ><button
+      mat-button
+      matTooltip="Undo · Ctrl Z"
+      (click)="undo()"
+      [disabled]="!undoStack.length"
+    >
+      ↶</button
+    ><button
+      mat-button
+      matTooltip="Redo · Ctrl Shift Z"
+      (click)="undo(true)"
+      [disabled]="!redoStack.length"
+    >
+      ↷
+    </button>
+  </div>
+  <div class="runtime-controls">
+    <button
+      mat-flat-button
+      class="start"
+      (click)="control('start')"
+      [disabled]="runtime()?.status==='running'"
+    >
+      ▶ Start</button
+    ><button mat-button (click)="control('pause')">Ⅱ Pause</button
+    ><button mat-button (click)="control('stop')">■ Stop</button
+    ><button mat-button (click)="control('reset')">↺ Reset</button
+    ><span class="divider"></span
+    ><select
+      aria-label="Simulation speed"
+      [ngModel]="runtime()?.speed"
+      (ngModelChange)="speed($event)"
+    >
+      <option [value]="0.5">0.5×</option>
+      <option [value]="1">1× speed</option>
+      <option [value]="5">5× speed</option>
+      <option [value]="10">10× speed</option>
+      <option [value]="20">20× speed</option></select
+    ><span class="clock">T+ {{runtime()?.time?.toFixed(1) || '0.0'}} s</span>
+  </div>
+  <div class="opc-status">
+    <span class="status-dot" [class.good]="runtime()?.opcua?.running"></span>
+    OPC UA <span class="muted">:4840</span>
+  </div>
+</nav>
+<main>
+  <aside class="library">
+    <div class="panel-heading">
+      EQUIPMENT LIBRARY <span>{{catalog.length}}</span>
+    </div>
+    <div class="search-box">
+      <span>⌕</span
+      ><input
+        aria-label="Search equipment"
+        placeholder="Search equipment…"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      /><kbd>⌘ K</kbd>
+    </div>
+    <p class="hint">Drag equipment onto the canvas</p>
+    @for(category of ['Process','Instruments','Manufacturing'];track category){
+    <div class="category">{{category}} <span>−</span></div>
+    @for(entry of filtered();track
+    entry[0]){@if(entry[1].category===category){<button
+      class="library-item"
+      draggable="true"
+      (dragstart)="startLibrary($event,entry[0])"
+      (dblclick)="add($any(entry[0]))"
+    >
+      <span class="symbol-icon"
+        >{{entry[0]==='tank'?'▤':entry[0]==='pump'?'◉':entry[0]==='valve'?'⋈':entry[0].includes('sensor')?'⊕':entry[0]==='pipe'?'━':'▣'}}</span
+      ><span>{{entry[1].name}}</span><span class="drag-handle">⠿</span></button
+    >}}}
+    <div class="library-footer">
+      <span class="status-dot good"></span> Backend owns process state<br /><span
+        class="muted"
+        >100 ms deterministic timestep</span
+      >
+    </div>
+  </aside>
+  <section class="workspace">
+    <div class="canvas-toolbar">
+      <div>
+        <span class="drawing-icon">⌘</span> Process drawing
+        <span class="badge">{{runtime()?.status || 'OFFLINE'}}</span>
+      </div>
+      <div class="canvas-actions">
+        <button (click)="copy();paste()" matTooltip="Duplicate selection">
+          ⧉</button
+        ><button (click)="align()" matTooltip="Align selected equipment">
+          ≡</button
+        ><button (click)="delete()" matTooltip="Delete selection">⌫</button
+        ><span class="divider"></span><button (click)="fit()">Fit view</button
+        ><span>{{(zoom()*100).toFixed(0)}}%</span>
+      </div>
+    </div>
+    <div
+      class="drawing"
+      (dragover)="$event.preventDefault()"
+      (drop)="drop($event)"
+    >
+      <svg
+        class="canvas"
+        viewBox="0 0 1400 760"
+        preserveAspectRatio="none"
+        (pointerdown)="background($event)"
+        (pointermove)="move($event)"
+        (pointerup)="up()"
+        (pointercancel)="up()"
+        (wheel)="wheel($event)"
+        aria-label="Factory process canvas"
+      >
+        <defs>
+          <pattern
+            id="grid"
+            width="20"
+            height="20"
+            patternUnits="userSpaceOnUse"
+          >
+            <circle cx="1" cy="1" r="0.8" fill="#2a3a48" />
+          </pattern>
+          <marker
+            id="arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="5"
+            markerHeight="5"
+            orient="auto-start-reverse"
+          >
+            <path d="M0 0L10 5L0 10Z" fill="#428f91" />
+          </marker>
+        </defs>
+        <rect width="1400" height="760" fill="url(#grid)" />
+        <g
+          [attr.transform]="'translate('+pan().x+' '+pan().y+') scale('+zoom()+')'"
+        >
+          <text x="60" y="40" class="drawing-title">
+            WATER TREATMENT / PROCESS AREA 01
+          </text>
+          <text x="60" y="67" class="drawing-subtitle">
+            {{project()?.equipment?.length}} components ·
+            {{project()?.connections?.length}} connections · Units: L, L/s, %
+          </text>
+          @for(c of project()?.connections;track c.id){
+          <path
+            [attr.d]="path(c)"
+            class="connection"
+            [class.signal-line]="c.fromPort==='level'"
+            marker-end="url(#arrow)"
+            (dblclick)="$event.stopPropagation();editRemoveConnection(c.id)"
+          >
+            <title>Double-click to remove connection</title>
+          </path>
+          }@for(item of project()?.equipment;track item.id){
+          <g
+            equipmentSymbol
+            [equipment]="item"
+            [state]="runtime()?.states?.[item.id]"
+            [selected]="selected().includes(item.id)"
+            [attr.transform]="'translate('+item.x+' '+item.y+')'"
+            (pointerdown)="down($event,item)"
+            (portClick)="port(item,$event)"
+          />
+          }
+          <text x="60" y="640" class="drawing-subtitle">
+            {{project()?.name}} · REV {{runtime()?.revision || 0}} · ENGINEERING
+            DRAWING
+          </text>
+        </g>
+      </svg>
+      <div class="canvas-legend">
+        <span><i class="legend-line"></i> Process flow</span
+        ><span><i class="legend-line dashed"></i> Instrument signal</span>
+      </div>
+      <div class="canvas-hint">
+        {{connecting()?'● Select destination port':'Shift: multi-select · Alt +
+        drag: pan · Scroll: zoom'}}
+      </div>
+    </div>
+    <div class="diagnostics">
+      <div class="diagnostic-tabs">
+        <button [class.active]="tab()==='events'" (click)="tab.set('events')">
+          Events <span>{{runtime()?.events?.length || 0}}</span></button
+        ><button [class.active]="tab()==='alarms'" (click)="tab.set('alarms')">
+          Alarms</button
+        ><button [class.active]="tab()==='opcua'" (click)="tab.set('opcua')">
+          OPC UA connections</button
+        ><span class="log-label">LIVE DIAGNOSTICS</span>
+      </div>
+      @if(tab()==='opcua'){
+      <div class="ua-diagnostic">
+        <span class="status-dot good"></span> {{runtime()?.opcua?.endpoint}} ·
+        {{runtime()?.opcua?.sessions}} active sessions ·
+        {{runtime()?.opcua?.secure?'Sign & Encrypt · certificate trust
+        required':'Local development profile'}}
+        <p>Stable namespace: urn:twynix:factory-simulator</p>
+      </div>
+      }@else{
+      <div class="event-log">
+        @for(event of runtime()?.events?.slice()?.reverse();track
+        event.seq){@if(tab()==='events'||event.severity==='alarm'){
+        <div class="event-row">
+          <time>{{event.time.toFixed(1)}} s</time
+          ><span class="event-severity" [class.alarm]="event.severity==='alarm'"
+            >{{event.severity}}</span
+          ><span>{{event.message}}</span
+          ><span class="event-source">RUNTIME</span>
+        </div>
+        }}
+      </div>
+      }
+    </div>
+  </section>
+  <aside class="properties">
+    <div class="panel-heading">PROPERTIES <span>⚙</span></div>
+    @if(selectedEquipment();as item){
+    <div class="selected-heading">
+      <span class="selected-type">{{item.type}}</span>
+      <h2>{{item.tag}}</h2>
+      <span class="state-label"
+        >● {{runtime()?.states?.[item.id]?.status || 'stopped'}} ·
+        {{runtime()?.states?.[item.id]?.quality}}</span
+      >
+    </div>
+    <div class="property-content">
+      <h3>IDENTITY</h3>
+      <label
+        >Equipment tag<input
+          [ngModel]="item.tag"
+          (change)="change('tag',$any($event.target).value)" /></label
+      ><label
+        >Label<input
+          [ngModel]="item.label"
+          (change)="change('label',$any($event.target).value)" /></label
+      ><label
+        >Control mode<select
+          [ngModel]="item.mode"
+          (ngModelChange)="change('mode',$event)"
+        >
+          <option value="manual">Manual · application</option>
+          <option value="automatic">Automatic · level controller</option>
+          <option value="external">External · OPC UA</option>
+        </select></label
+      >
+      <h3>COMMANDS & LIVE VALUES</h3>
+      @for(tag of tags();track tag.name){@if(tag.writable){
+      <div class="command-row">
+        <span>{{tag.name}}</span>@if(tag.type==='boolean'){<button
+          class="toggle"
+          [class.on]="item.commands[tag.name]"
+          [disabled]="item.mode!=='manual'"
+          (click)="command(tag.name,!item.commands[tag.name])"
+        >
+          {{item.commands[tag.name]?'ON':'OFF'}}</button
+        >}@else{<input
+          type="number"
+          [min]="tag.min??0"
+          [max]="tag.max??100"
+          [disabled]="item.mode!=='manual'"
+          [ngModel]="item.commands[tag.name]"
+          (change)="command(tag.name,+$any($event.target).value)"
+          aria-label="Speed setpoint"
+        />}
+      </div>
+      }@else{
+      <div class="live-row">
+        <span>{{tag.name}}</span
+        ><strong
+          >{{value(item.id,tag.name)}} <small>{{tag.unit}}</small></strong
+        >
+      </div>
+      }}
+      <h3>PARAMETERS <small>editing restores initial conditions</small></h3>
+      @for(param of params();track param[0]){<label class="parameter"
+        >{{param[0]}}<input
+          type="number"
+          [ngModel]="param[1]"
+          (change)="parameter(param[0],$any($event.target).value)" /></label
+      >}
+      <h3>FAULT INJECTION</h3>
+      <div class="fault-grid">
+        @for(f of
+        ['trip','fail-start','stuck-open','stuck-closed','stuck','drift','jam','overheat','invalid','leak'];track
+        f){<button
+          [class.injected]="item.faults.includes($any(f))"
+          (click)="fault(f,!item.faults.includes($any(f)))"
+        >
+          {{item.faults.includes($any(f))?'●':'＋'}} {{f}}</button
+        >}
+      </div>
+      <h3>CONNECTION PORTS</h3>
+      @for(port of ports();track port.id){
+      <div class="live-row">
+        <span>{{port.name}}</span
+        ><small>{{port.domain}} / {{port.direction}}</small>
+      </div>
+      }
+      <h3>OPC UA NODE</h3>
+      <p class="node-info">{{nodeId(tags()[0]?.name || '')}}</p>
+      <small class="muted"
+        >Identity uses equipment ID; moving or renaming its tag preserves
+        NodeIds.</small
+      >
+    </div>
+    }@else{
+    <div class="empty-properties">
+      <span>⌖</span>
+      <h2>Inspect equipment</h2>
+      <p>
+        Select a symbol to edit its properties, control the process, or inject a
+        fault.
+      </p>
+      <div class="shortcuts">
+        <p>⌘ S <span>Save project</span></p>
+        <p>⌘ D <span>Duplicate selection</span></p>
+        <p>⌘ Z <span>Undo edit</span></p>
+        <p>⇧ click <span>Multi-select</span></p>
+      </div>
+      <p>Edits require a paused process and restore initial conditions.</p>
+    </div>
+    }
+  </aside>
+</main>
+<footer>
+  <span
+    ><span class="status-dot" [class.good]="connected()"></span>
+    {{connected()?'Runtime connected':'Runtime disconnected'}}</span
+  ><span
+    >{{notice() || 'Ready · Open a component to inspect live telemetry'}}</span
+  ><button (click)="setToken()">Access token</button
+  ><button (click)="export()">Export JSON</button
+  ><label class="import"
+    >Import JSON<input
+      type="file"
+      accept=".json"
+      (change)="importFile($event)"
+      hidden /></label
+  ><span>TWYNIX v0.1</span>
+</footer>
+@if(showProjects()){
+<div class="modal-backdrop">
+  <div class="modal">
+    <div class="panel-heading">
+      PROJECT LIBRARY <button (click)="showProjects.set(false)">✕</button>
+    </div>
+    @for(p of projects();track p.id){
+    <div class="project-row">
+      <button (click)="open(p.id)">{{p.name}}</button
+      ><button (click)="removeProject(p.id)" [disabled]="p.id===project()?.id">
+        Delete
+      </button>
+    </div>
+    }<button mat-button (click)="duplicateProject();showProjects.set(false)">
+      Duplicate current project
+    </button>
+  </div>
+</div>
+}

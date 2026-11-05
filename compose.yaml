@@ -1,0 +1,21 @@
+services:
+  simulator:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+      - "4840:4840"
+    environment:
+      HOST: 0.0.0.0
+      API_TOKEN: ${API_TOKEN:?Set API_TOKEN in .env}
+      OPCUA_PASSWORD: ${OPCUA_PASSWORD:?Set OPCUA_PASSWORD in .env}
+      OPCUA_USER: ${OPCUA_USER:-operator}
+      OPCUA_HOST: ${OPCUA_HOST:-localhost}
+      OPCUA_DEV: "false"
+    volumes:
+      - simulator-data:/app/data
+    stop_grace_period: 15s
+volumes:
+  simulator-data:

@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/web-ts",
+    "types": [],
+    "noEmit": false
+  },
+  "files": ["src/main.ts"],
+  "angularCompilerOptions": {
+    "strictTemplates": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../packages/shared-types/src/**/*.ts",
+    "../../packages/equipment-models/src/**/*.ts",
+    "../../examples/**/*.ts"
+  ]
+}
