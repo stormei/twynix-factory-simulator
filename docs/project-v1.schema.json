@@ -1,0 +1,258 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{1,80}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "equipment": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "source",
+              "tank",
+              "pump",
+              "valve",
+              "pipe",
+              "flow-sensor",
+              "level-sensor",
+              "pressure-sensor",
+              "conveyor",
+              "motor",
+              "photo-sensor",
+              "machine",
+              "counter"
+            ]
+          },
+          "tag": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "x": {
+            "type": "number",
+            "minimum": -10000,
+            "maximum": 10000
+          },
+          "y": {
+            "type": "number",
+            "minimum": -10000,
+            "maximum": 10000
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "automatic",
+              "external"
+            ]
+          },
+          "parameters": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "commands": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": [
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "faults": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "trip",
+                "fail-start",
+                "stuck-open",
+                "stuck-closed",
+                "stuck",
+                "drift",
+                "jam",
+                "overheat",
+                "invalid",
+                "leak"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "tag",
+          "label",
+          "x",
+          "y",
+          "mode",
+          "parameters",
+          "commands",
+          "faults"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "connections": {
+      "maxItems": 2000,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "from": {
+            "type": "string"
+          },
+          "fromPort": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "toPort": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "fromPort",
+          "to",
+          "toPort"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "controllers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tank": {
+            "type": "string"
+          },
+          "pump": {
+            "type": "string"
+          },
+          "low": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "high": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "tank",
+          "pump",
+          "low",
+          "high",
+          "enabled"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "scenarios": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "number",
+            "minimum": 0
+          },
+          "equipmentId": {
+            "type": "string"
+          },
+          "fault": {
+            "type": "string",
+            "enum": [
+              "trip",
+              "fail-start",
+              "stuck-open",
+              "stuck-closed",
+              "stuck",
+              "drift",
+              "jam",
+              "overheat",
+              "invalid",
+              "leak"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "at",
+          "equipmentId",
+          "fault",
+          "active"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "seed",
+    "equipment",
+    "connections",
+    "controllers",
+    "scenarios"
+  ],
+  "additionalProperties": false
+}

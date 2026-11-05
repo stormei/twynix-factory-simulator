@@ -271,11 +271,11 @@
       <div class="command-row">
         <span>{{tag.name}}</span>@if(tag.type==='boolean'){<button
           class="toggle"
-          [class.on]="item.commands[tag.name]"
+          [class.on]="commandValue(tag.name)"
           [disabled]="item.mode!=='manual'"
-          (click)="command(tag.name,!item.commands[tag.name])"
+          (click)="command(tag.name,!commandValue(tag.name))"
         >
-          {{item.commands[tag.name]?'ON':'OFF'}}</button
+          {{commandValue(tag.name)?'ON':'OFF'}}</button
         >}@else{<input
           type="number"
           [min]="tag.min??0"

@@ -502,6 +502,15 @@ export class App {
     const v = this.runtime()?.states[id]?.values[key];
     return typeof v === "number" ? v.toFixed(2) : String(v ?? "—");
   }
+  commandValue(tag: string) {
+    const item = this.selectedEquipment();
+    if (!item) return false;
+    return Boolean(
+      item.mode === "automatic"
+        ? this.runtime()?.states[item.id]?.values[tag]
+        : item.commands[tag],
+    );
+  }
   nodeId(tag: string) {
     return `ns=2;s=project/${this.project()?.id}/equipment/${this.selectedEquipment()?.id}/${tag}`;
   }

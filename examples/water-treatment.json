@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "id": "water-treatment",
+  "name": "Water Treatment Process",
+  "seed": 2026,
+  "equipment": [
+    {
+      "id": "source",
+      "type": "source",
+      "tag": "SRC-101",
+      "label": "Water source",
+      "x": 70,
+      "y": 240,
+      "mode": "manual",
+      "parameters": {
+        "nominalFlow": 40
+      },
+      "commands": {},
+      "faults": []
+    },
+    {
+      "id": "pump",
+      "type": "pump",
+      "tag": "P-101",
+      "label": "Centrifugal pump",
+      "x": 250,
+      "y": 240,
+      "mode": "automatic",
+      "parameters": {
+        "nominalFlow": 35,
+        "rampTime": 3,
+        "ratedPower": 5.5
+      },
+      "commands": {
+        "RunCommand": false,
+        "SpeedSetpoint": 100
+      },
+      "faults": []
+    },
+    {
+      "id": "inlet",
+      "type": "valve",
+      "tag": "XV-101",
+      "label": "Control valve",
+      "x": 440,
+      "y": 240,
+      "mode": "manual",
+      "parameters": {
+        "actuationTime": 2,
+        "coefficient": 1,
+        "delay": 0
+      },
+      "commands": {
+        "OpenCommand": true
+      },
+      "faults": []
+    },
+    {
+      "id": "flow",
+      "type": "flow-sensor",
+      "tag": "FT-101",
+      "label": "Flow transmitter",
+      "x": 620,
+      "y": 240,
+      "mode": "manual",
+      "parameters": {
+        "noise": 0.03,
+        "filter": 0.4,
+        "offset": 0,
+        "drift": 0,
+        "delay": 0
+      },
+      "commands": {},
+      "faults": []
+    },
+    {
+      "id": "tank",
+      "type": "tank",
+      "tag": "T-101",
+      "label": "Storage tank",
+      "x": 820,
+      "y": 210,
+      "mode": "manual",
+      "parameters": {
+        "capacity": 5000,
+        "initialVolume": 1250,
+        "high": 90,
+        "low": 10
+      },
+      "commands": {},
+      "faults": []
+    },
+    {
+      "id": "outlet",
+      "type": "valve",
+      "tag": "XV-102",
+      "label": "Control valve",
+      "x": 1060,
+      "y": 240,
+      "mode": "manual",
+      "parameters": {
+        "actuationTime": 2,
+        "coefficient": 1,
+        "delay": 0
+      },
+      "commands": {
+        "OpenCommand": false
+      },
+      "faults": []
+    },
+    {
+      "id": "level",
+      "type": "level-sensor",
+      "tag": "LT-101",
+      "label": "Level transmitter",
+      "x": 820,
+      "y": 440,
+      "mode": "manual",
+      "parameters": {
+        "noise": 0.04,
+        "filter": 0.5,
+        "offset": 0,
+        "drift": 0,
+        "delay": 0
+      },
+      "commands": {},
+      "faults": []
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "source",
+      "fromPort": "out",
+      "to": "pump",
+      "toPort": "in"
+    },
+    {
+      "id": "c2",
+      "from": "pump",
+      "fromPort": "out",
+      "to": "inlet",
+      "toPort": "in"
+    },
+    {
+      "id": "c3",
+      "from": "inlet",
+      "fromPort": "out",
+      "to": "flow",
+      "toPort": "in"
+    },
+    {
+      "id": "c4",
+      "from": "flow",
+      "fromPort": "out",
+      "to": "tank",
+      "toPort": "in"
+    },
+    {
+      "id": "c5",
+      "from": "tank",
+      "fromPort": "out",
+      "to": "outlet",
+      "toPort": "in"
+    },
+    {
+      "id": "c6",
+      "from": "tank",
+      "fromPort": "level",
+      "to": "level",
+      "toPort": "in"
+    }
+  ],
+  "controllers": [
+    {
+      "id": "LIC-101",
+      "tank": "tank",
+      "pump": "pump",
+      "low": 30,
+      "high": 80,
+      "enabled": true
+    }
+  ],
+  "scenarios": []
+}

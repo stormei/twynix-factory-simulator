@@ -70,6 +70,26 @@ describe("causal water process", () => {
     expect(a.states).toEqual(b.states);
     expect(a.time).toBe(100);
   });
+  it("conserves fluid volume in a tank recirculation loop", () => {
+    const p = structuredClone(demo);
+    p.connections = p.connections.filter((c) => c.id !== "c1");
+    p.connections.push({
+      id: "recirculation",
+      from: "outlet",
+      fromPort: "out",
+      to: "pump",
+      toPort: "in",
+    });
+    const s = new Simulation(p);
+    s.submit("pump", "RunCommand", true, "ui");
+    s.submit("outlet", "OpenCommand", true, "ui");
+    run(s, 1000);
+    expect(s.states["tank"].values["Volume"]).toBe(1250);
+    expect(Number(s.states["tank"].values["Inflow"])).toBeGreaterThan(0);
+    expect(s.states["tank"].values["Inflow"]).toBe(
+      s.states["tank"].values["Outflow"],
+    );
+  });
   it("pauses, resumes, resets, and pauses explicitly on overload", () => {
     const s = new Simulation(demo);
     s.control("start");

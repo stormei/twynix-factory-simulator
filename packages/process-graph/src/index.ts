@@ -115,7 +115,15 @@ export function fluidPaths(p: Project, start: string): string[] {
     const link = p.connections.find(
       (c) => c.from === current && c.fromPort === "out",
     );
-    if (!link || visited.has(link.to)) break;
+    if (!link) break;
+    if (visited.has(link.to)) {
+      if (
+        link.to === start &&
+        p.equipment.find((e) => e.id === start)?.type === "tank"
+      )
+        result.push(start);
+      break;
+    }
     visited.add(link.to);
     result.push(link.to);
     const next = p.equipment.find((e) => e.id === link.to);
