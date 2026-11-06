@@ -19,6 +19,10 @@ For development, use `npm run dev` and open http://127.0.0.1:4200. The Angular d
 
 For an isolated local test with unsecured OPC UA transport, explicitly set `OPCUA_DEV=true`. This permits anonymous **reads only**. Writes still require an authenticated operator with a password of at least 12 characters. The default profile uses Basic256Sha256 / SignAndEncrypt and rejects unknown client certificates.
 
+## Workbench
+
+The editor uses compact command bars, docked panels, a property grid, and event/data tables. Library categories collapse; Ctrl/Cmd K focuses equipment search. Identity, mode and model parameters are disabled while running; commands and fault controls remain available. Parameter labels include engineering units where defined, and the fault panel lists faults relevant to the selected equipment.
+
 ## Try the production line
 
 - Click **Full-screen live view** in the top toolbar to hide the palette, properties, events, and editing chrome. Runtime controls, metrics and the Symbols slider stay available. Use **Exit full-screen** or **Esc** to restore the editor; entering or leaving this view never starts, stops or resets the simulation.

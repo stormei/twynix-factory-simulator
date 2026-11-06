@@ -50,6 +50,18 @@ export class App {
   );
   catalog = Object.entries(definitions);
   search = signal("");
+  collapsedCategories = signal<string[]>([]);
+  categoryCount(category: string) {
+    return this.filtered().filter(([, d]) => d.category === category).length;
+  }
+  toggleCategory(category: string) {
+    this.collapsedCategories.update((categories) =>
+      categories.includes(category)
+        ? categories.filter((c) => c !== category)
+        : [...categories, category],
+    );
+  }
+
   filtered = computed(() =>
     this.catalog.filter(([key, d]) =>
       (key + d.name + d.category)
@@ -276,7 +288,7 @@ export class App {
   async save() {
     await this.attempt(async () => {
       await this.api("projects/save", {});
-      this.notice.set("Project saved to SQLite");
+      this.notice.set("Project saved");
     });
   }
   async openList() {
@@ -566,8 +578,8 @@ export class App {
     const maxY = Math.max(...items.map((e) => e.y)) + 210 * scale;
     const left = 28,
       right = 28,
-      top = size.height < 360 ? 88 : 116,
-      bottom = 34;
+      top = size.height < 360 ? 62 : 76,
+      bottom = 28;
     const availableWidth = Math.max(1, size.width - left - right);
     const availableHeight = Math.max(1, size.height - top - bottom);
     const zoom = Math.min(
@@ -835,6 +847,48 @@ export class App {
     this.selectedEquipment()
       ? definitions[this.selectedEquipment()!.type].ports
       : [];
+  parameterLabel(key: string) {
+    const units: Record<string, string> = {
+      capacity:
+        this.selectedEquipment()?.type === "tank"
+          ? "Capacity (L)"
+          : "Capacity (pcs)",
+      initialVolume: "Initial volume (L)",
+      nominalFlow: "Nominal flow (L/s)",
+      high: "High level (%)",
+      low: "Low level (%)",
+      rampTime: "Ramp time (s)",
+      ratedPower: "Rated power (kW)",
+      actuationTime: "Actuation time (s)",
+      cycleTime: "Cycle time (s)",
+      interval: "Feed interval (s)",
+      length: "Length (m)",
+      speed: "Belt speed (m/s)",
+      filter: "Filter time (s)",
+      delay: "Delay (s)",
+      rejectRate: "Reject fraction",
+    };
+    const label = key.replace(/([a-z])([A-Z])/g, "$1 $2");
+    return units[key] ?? label[0].toUpperCase() + label.slice(1);
+  }
+  faultChoices(item: Equipment): Equipment["faults"] {
+    if (item.type === "valve") return ["stuck-open", "stuck-closed", "leak"];
+    if (item.type.includes("sensor")) return ["stuck", "drift", "invalid"];
+    if (["pump", "motor"].includes(item.type))
+      return ["trip", "fail-start", "overheat"];
+    if (
+      [
+        "conveyor",
+        "machine",
+        "inspection",
+        "material-source",
+        "buffer",
+      ].includes(item.type)
+    )
+      return ["trip", "jam", "fail-start", "overheat"];
+    if (["sink", "counter"].includes(item.type)) return ["trip", "jam"];
+    return [];
+  }
   params = () => Object.entries(this.selectedEquipment()?.parameters ?? {});
   value(id: string, key: string) {
     const v = this.runtime()?.states[id]?.values[key];
@@ -859,6 +913,16 @@ export class App {
         void this.exitLiveView();
       } else if (e.key === "Delete" || e.key === "Backspace")
         e.preventDefault();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      if (this.runtime()?.status === "running")
+        this.notice.set("Pause the simulation to edit equipment.");
+      else
+        document
+          .querySelector<HTMLInputElement>('[aria-label="Search equipment"]')
+          ?.focus();
       return;
     }
     if (

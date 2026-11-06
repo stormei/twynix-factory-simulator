@@ -1,18 +1,18 @@
 <svg graphicsDefs class="svg-resources" aria-hidden="true"></svg>
 <header class="titlebar" [hidden]="fullScreenLive()">
   <a class="brand" href="/" aria-label="Twynix home"
-    ><span class="brandmark">◈</span> TWYNIX<span class="brand-divider"></span
-    ><span class="product">FACTORY SIMULATOR</span></a
+    ><span>Twynix</span><span class="brand-divider"></span
+    ><span class="product">Factory Simulator</span></a
   >
   <div class="project-title">
-    <span class="muted">PROJECT /</span
+    <span class="muted">Project:</span
     ><button (click)="rename()">
       {{project()?.name || 'Connecting to runtime…'}}
-      <span class="muted">⌄</span>
+      <span class="rename-mark" aria-hidden="true">✎</span>
     </button>
   </div>
   <span class="version"
-    >LOCAL WORKSPACE <span class="status-dot" [class.good]="connected()"></span
+    >Local <span class="status-dot" [class.good]="connected()"></span
   ></span>
 </header>
 <nav class="toolbar">
@@ -39,7 +39,7 @@
   </div>
   @if(fullScreenLive()){
   <div class="live-project-context">
-    <span class="brandmark">◈</span>
+    <span class="brandmark">TW</span>
     <div>
       <small>TWYNIX · LIVE VIEW</small><strong>{{project()?.name}}</strong>
     </div>
@@ -53,7 +53,12 @@
       [disabled]="runtime()?.status==='running'"
     >
       ▶ Start</button
-    ><button mat-button (click)="control('pause')">Ⅱ Pause</button
+    ><button
+      mat-button
+      (click)="control('pause')"
+      [disabled]="runtime()?.status!=='running'"
+    >
+      Ⅱ Pause</button
     ><button mat-button (click)="control('stop')">■ Stop</button
     ><button mat-button (click)="control('reset')">↺ Reset</button
     ><span class="divider"></span
@@ -87,9 +92,7 @@
     aria-label="Equipment library"
     [hidden]="runtime()?.status==='running'||fullScreenLive()"
   >
-    <div class="panel-heading">
-      EQUIPMENT LIBRARY <span>{{catalog.length}}</span>
-    </div>
+    <div class="panel-heading">Equipment <span>{{catalog.length}}</span></div>
     <div class="search-box">
       <span>⌕</span
       ><input
@@ -99,11 +102,23 @@
         (ngModelChange)="search.set($event)"
       /><kbd>⌘ K</kbd>
     </div>
-    <p class="hint">Drag equipment onto the canvas</p>
+    <p class="hint">Drag to insert · Double-click to add</p>
     @for(category of ['Manufacturing','Process','Instruments'];track category){
-    <div class="category">{{category}} <span>−</span></div>
-    @for(entry of filtered();track
-    entry[0]){@if(entry[1].category===category){<button
+    @if(categoryCount(category)||!search()){
+    <button
+      class="category"
+      [attr.aria-label]="category+' equipment'"
+      [attr.aria-expanded]="!collapsedCategories().includes(category)||!!search()"
+      (click)="toggleCategory(category)"
+    >
+      <span
+        >{{collapsedCategories().includes(category)&&!search()?'▸':'▾'}}
+        {{category}}</span
+      ><small>{{categoryCount(category)}}</small>
+    </button>
+    @if(!collapsedCategories().includes(category)||search()){ @for(entry of
+    filtered();track entry[0]){@if(entry[1].category===category){
+    <button
       class="library-item"
       [attr.aria-label]="entry[1].name"
       draggable="true"
@@ -111,17 +126,19 @@
       (dblclick)="add($any(entry[0]))"
     >
       <svg class="library-thumbnail" viewBox="-8 -8 140 138" aria-hidden="true">
-        <g equipmentGlyph [type]="$any(entry[0])" [preview]="true" />
-      </svg>
-      <span class="library-name"
+        <g equipmentGlyph [type]="$any(entry[0])" [preview]="true" /></svg
+      ><span class="library-name"
         >{{entry[1].name}}<small>{{entry[1].ports.length}} ports</small></span
-      ><span class="drag-handle">⠿</span></button
-    >}}}
+      ><span class="drag-handle">⠿</span>
+    </button>
+    }} } } } @if(!filtered().length){
+    <p class="empty-search">No matching equipment.</p>
+    }
     <div class="library-footer">
-      <span class="eyebrow">EXAMPLE PROJECTS</span
+      <span class="eyebrow">Examples</span
       ><button (click)="open('production-line')">▸ Packaging line</button
       ><button (click)="open('water-treatment')">▸ Water treatment</button
-      ><span class="status-dot good"></span>Local simulation engine
+      ><span class="status-dot good"></span>Local runtime
     </div>
   </aside>
   <section class="workspace">
@@ -188,31 +205,30 @@
     @if(runtime()?.production;as metrics){
     <div class="production-strip" aria-label="Production metrics">
       <div>
-        <span>GOOD OUTPUT</span
+        <span>Good output</span
         ><strong>{{metrics.completed}} <small>pcs</small></strong>
       </div>
       <div>
-        <span>THROUGHPUT</span
+        <span>Throughput</span
         ><strong
           >{{metrics.throughputPerHour.toFixed(0)}} <small>pcs/h</small></strong
         >
       </div>
       <div>
-        <span>WORK IN PROGRESS</span
-        ><strong>{{metrics.wip}} <small>pcs</small></strong>
+        <span>WIP</span><strong>{{metrics.wip}} <small>pcs</small></strong>
       </div>
       <div>
-        <span>MEAN LEAD TIME</span
+        <span>Lead time</span
         ><strong
           >{{metrics.averageCycleTime.toFixed(1)}} <small>s</small></strong
         >
       </div>
       <div>
-        <span>STATION UTILIZATION</span
+        <span>Utilization</span
         ><strong>{{metrics.utilization.toFixed(0)}}<small>%</small></strong>
       </div>
       <div class="bottleneck-metric">
-        <span>BUSIEST WORKSTATION</span
+        <span>Busiest station</span
         ><strong
           >{{metrics.bottleneck?.tag || '—'}}
           <small
@@ -230,8 +246,7 @@
     >
       <div class="drawing-heading">
         <span class="eyebrow"
-          >{{runtime()?.production?'MANUFACTURING / LINE 01':'PROCESS
-          ENGINEERING / AREA 01'}}</span
+          >{{runtime()?.production?'Line 01':'Area 01'}}</span
         >
         <h1>{{project()?.name}}</h1>
         <p>
@@ -318,11 +333,7 @@
     <div class="io-panel workspace-panel">
       <div class="workspace-panel-heading">
         <div>
-          <span class="eyebrow">SIGNAL WORKSPACE</span>
-          <h1>I/O monitor</h1>
-          <p>
-            Commands, physical feedback, and measurements from the live process.
-          </p>
+          <h1>I/O signals</h1>
         </div>
         <span class="tag-count">{{ioRows().length}} signals</span>
       </div>
@@ -409,7 +420,7 @@
                   (click)="copyNodeId(row.nodeId)"
                   [matTooltip]="row.nodeId"
                 >
-                  Copy NodeId ↗
+                  Copy NodeId
                 </button>
               </td>
             </tr>
@@ -422,18 +433,14 @@
     <div class="experiments-panel workspace-panel">
       <div class="workspace-panel-heading">
         <div>
-          <span class="eyebrow">TEST BEFORE YOU CHANGE</span>
-          <h1>Scenario lab</h1>
-          <p>
-            Compare repeatable runs with the same seed and scheduled faults.
-          </p>
+          <h1>Simulation experiments</h1>
         </div>
         <span class="seed-label">SEED {{project()?.seed}}</span>
       </div>
       <section class="schedule-section">
         <div class="section-caption">
-          <h2>01 <span>Schedule a disruption</span></h2>
-          <span>Save the project to reuse your scenario</span>
+          <h2>Fault schedule</h2>
+          <span>Saved with project</span>
         </div>
         <div class="scenario-form">
           <label
@@ -499,17 +506,14 @@
             </button>
           </div>
           }@empty{
-          <p>
-            No scheduled faults. Add a fault window, or compare normal
-            operation.
-          </p>
+          <p>No scheduled faults.</p>
           }
         </div>
       </section>
       <section class="comparison-section">
         <div class="section-caption">
-          <h2>02 <span>Compare configurations</span></h2>
-          <span>Isolated runs · your live process continues</span>
+          <h2>Run parameters</h2>
+          <span>Independent of live runtime</span>
         </div>
         <div class="comparison-form">
           <label
@@ -565,8 +569,8 @@
           <thead>
             <tr>
               <th>CONFIGURATION</th>
-              <th>GOOD OUTPUT</th>
-              <th>THROUGHPUT</th>
+              <th>Good output</th>
+              <th>Throughput</th>
               <th>LEAD TIME</th>
               <th>WIP</th>
               <th>REJECTS</th>
@@ -579,8 +583,7 @@
                 <strong>{{variant.name}}</strong
                 ><small
                   >{{variant.overrides.length?variant.overrides[0].parameter+' =
-                  '+variant.overrides[0].value:'Current saved
-                  definition'}}</small
+                  '+variant.overrides[0].value:'Current configuration'}}</small
                 >
               </td>
               <td>
@@ -602,9 +605,8 @@
           </tbody>
         </table>
         <p class="experiment-note">
-          Results include startup and scheduled downtime. More buffer space will
-          only help when accumulation capacity is a constraint. Each report
-          retains the exact starting definition and seed.
+          Includes startup and scheduled downtime. Configuration and seed are
+          retained with each result.
         </p>
         }
       </section>
@@ -628,8 +630,7 @@
         ><button [class.active]="tab()==='opcua'" (click)="tab.set('opcua')">
           OPC UA connections</button
         ><span class="log-label"
-          >{{runtime()?.production ? 'MATERIAL FLOW · LIVE' : 'LIVE
-          DIAGNOSTICS'}}</span
+          >{{runtime()?.production ? 'Material flow' : 'Runtime'}}</span
         >
       </div>
       @if(tab()==='performance'&&runtime()?.production;as performance){
@@ -685,6 +686,10 @@
         </button>
       </div>
       }@else{
+      <div class="event-columns" aria-hidden="true">
+        <span>Time</span><span>Level</span><span>Message</span
+        ><span>Source</span>
+      </div>
       <div class="event-log">
         @for(event of runtime()?.events?.slice()?.reverse();track
         event.seq){@if(tab()==='events'||event.severity==='alarm'){
@@ -705,16 +710,9 @@
     aria-label="Equipment properties"
     [hidden]="fullScreenLive()"
   >
-    <div class="panel-heading">PROPERTIES <span>⚙</span></div>
+    <div class="panel-heading">Properties</div>
     @if(selectedEquipment();as item){
     <div class="selected-heading">
-      <svg class="property-glyph" viewBox="-10 -10 140 140" aria-hidden="true">
-        <g
-          equipmentGlyph
-          [type]="item.type"
-          [state]="runtime()?.states?.[item.id]"
-        />
-      </svg>
       <span class="selected-type">{{item.type}}</span>
       <h2>{{item.tag}}</h2>
       <span class="state-label"
@@ -723,18 +721,25 @@
       >
     </div>
     <div class="property-content">
-      <h3>IDENTITY</h3>
+      <h3>Configuration</h3>
+      <p class="property-edit-state">
+        {{runtime()?.status==='running'?'Pause to edit
+        configuration.':'Configuration changes reset the simulation.'}}
+      </p>
       <label
         >Equipment tag<input
           [ngModel]="item.tag"
+          [disabled]="runtime()?.status==='running'"
           (change)="change('tag',$any($event.target).value)" /></label
       ><label
         >Label<input
           [ngModel]="item.label"
+          [disabled]="runtime()?.status==='running'"
           (change)="change('label',$any($event.target).value)" /></label
       ><label
         >Control mode<select
           [ngModel]="item.mode"
+          [disabled]="runtime()?.status==='running'"
           (ngModelChange)="change('mode',$event)"
         >
           <option value="manual">Manual · application</option>
@@ -742,7 +747,7 @@
           <option value="external">External · OPC UA</option>
         </select></label
       >
-      <h3>COMMANDS & LIVE VALUES</h3>
+      <h3>Commands and feedback</h3>
       @for(tag of tags();track tag.name){@if(tag.writable){
       <div class="command-row">
         <span>{{tag.name}}</span>@if(tag.type==='boolean'){<button
@@ -770,32 +775,32 @@
         >
       </div>
       }}
-      <h3>PARAMETERS <small>editing restores initial conditions</small></h3>
+      <h3>Parameters</h3>
       @for(param of params();track param[0]){<label class="parameter"
-        >{{param[0]}}<input
+        >{{parameterLabel(param[0])}}<input
           type="number"
           [ngModel]="param[1]"
+          [disabled]="runtime()?.status==='running'"
           (change)="parameter(param[0],$any($event.target).value)" /></label
-      >}
-      <h3>FAULT INJECTION</h3>
+      >} @if(faultChoices(item).length){
+      <h3>Fault injection</h3>
       <div class="fault-grid">
-        @for(f of
-        ['trip','fail-start','stuck-open','stuck-closed','stuck','drift','jam','overheat','invalid','leak'];track
-        f){<button
+        @for(f of faultChoices(item);track f){<button
           [class.injected]="item.faults.includes($any(f))"
           (click)="fault(f,!item.faults.includes($any(f)))"
         >
           {{item.faults.includes($any(f))?'●':'＋'}} {{f}}</button
         >}
       </div>
-      <h3>CONNECTION PORTS</h3>
+      }
+      <h3>Ports</h3>
       @for(port of ports();track port.id){
       <div class="live-row">
         <span>{{port.name}}</span
         ><small>{{port.domain}} / {{port.direction}}</small>
       </div>
       }
-      <h3>OPC UA NODE</h3>
+      <h3>OPC UA</h3>
       <p class="node-info">{{nodeId(tags()[0]?.name || '')}}</p>
       <small class="muted"
         >Identity uses equipment ID; moving or renaming its tag preserves
@@ -804,17 +809,11 @@
     </div>
     }@else{
     <div class="empty-properties">
-      <svg class="empty-state-art" viewBox="-30 -10 200 140" aria-hidden="true">
-        <g equipmentGlyph type="machine" [preview]="true" />
-      </svg>
-      <h2>Inspect equipment</h2>
-      <p>
-        Select a symbol to edit its properties, control the process, or inject a
-        fault.
-      </p>
+      <h2>No selection</h2>
+      <p>Select equipment in the drawing or I/O table.</p>
       @if(runtime()?.production;as production){
       <div class="station-summary">
-        <span class="eyebrow">LINE STATUS</span>@for(station of
+        <span class="eyebrow">Station status</span>@for(station of
         production.stations;track station.id){<button
           (click)="selected.set([station.id])"
         >
@@ -825,13 +824,6 @@
         >}
       </div>
       }
-      <div class="shortcuts">
-        <p>⌘ S <span>Save project</span></p>
-        <p>⌘ D <span>Duplicate selection</span></p>
-        <p>⌘ Z <span>Undo edit</span></p>
-        <p>⇧ click <span>Multi-select</span></p>
-      </div>
-      <p>Edits require a paused process and restore initial conditions.</p>
     </div>
     }
   </aside>
@@ -840,8 +832,7 @@
   <span
     ><span class="status-dot" [class.good]="connected()"></span>
     {{connected()?'Runtime connected':'Runtime disconnected'}}</span
-  ><span
-    >{{notice() || 'Ready · Open a component to inspect live telemetry'}}</span
+  ><span>{{notice() || 'Ready'}}</span
   ><button (click)="setToken()">Access token</button
   ><button (click)="export()">Export JSON</button
   ><label class="import"
@@ -856,7 +847,7 @@
 <div class="modal-backdrop">
   <div class="modal">
     <div class="panel-heading">
-      PROJECT LIBRARY <button (click)="showProjects.set(false)">✕</button>
+      Projects <button (click)="showProjects.set(false)">✕</button>
     </div>
     @for(p of projects();track p.id){
     <div class="project-row">
