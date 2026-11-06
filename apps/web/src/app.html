@@ -127,6 +127,19 @@
         </button>
       </div>
       <div class="canvas-actions">
+        <label class="symbol-size-control" [hidden]="view()!=='drawing'">
+          <span>Symbols</span
+          ><input
+            type="range"
+            aria-label="Equipment symbol size"
+            min="80"
+            max="160"
+            step="5"
+            [value]="equipmentScale()*100"
+            [attr.aria-valuetext]="(equipmentScale()*100).toFixed(0)+' percent'"
+            (input)="setEquipmentSize($any($event.target).value)"
+          /><output>{{(equipmentScale()*100).toFixed(0)}}%</output>
+        </label>
         <button (click)="copy();paste()" matTooltip="Duplicate selection">
           ⧉</button
         ><button (click)="align()" matTooltip="Align selected equipment">
@@ -248,7 +261,7 @@
             [equipment]="item"
             [state]="runtime()?.states?.[item.id]"
             [selected]="selected().includes(item.id)"
-            [attr.transform]="'translate('+item.x+' '+item.y+') scale('+equipmentScale+')'"
+            [attr.transform]="'translate('+item.x+' '+item.y+') scale('+equipmentScale()+')'"
             [attr.data-equipment-id]="item.id"
             (pointerdown)="down($event,item)"
             (portClick)="port(item,$event)"

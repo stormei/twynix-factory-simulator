@@ -117,7 +117,7 @@ export class App {
       ),
   );
 
-  readonly equipmentScale = 1.35;
+  equipmentScale = signal(this.readEquipmentScale());
   canvasSize = signal({ width: 1400, height: 760 });
   private readonly destroyRef = inject(DestroyRef);
   zoom = signal(0.85);
@@ -458,6 +458,30 @@ export class App {
     if (JSON.stringify(before) !== JSON.stringify(this.project()))
       void this.commit(before);
   }
+  private readEquipmentScale(): number {
+    try {
+      const stored = localStorage.getItem("twynix-equipment-size");
+      const scale = stored === null ? 1.35 : Number(stored);
+      return Number.isFinite(scale) && scale >= 0.8 && scale <= 1.6
+        ? Math.round(scale * 20) / 20
+        : 1.35;
+    } catch {
+      return 1.35;
+    }
+  }
+  setEquipmentSize(percent: string): void {
+    const value = Number(percent);
+    if (!Number.isFinite(value)) return;
+    const scale =
+      (Math.round(Math.max(80, Math.min(160, value)) / 5) * 5) / 100;
+    this.equipmentScale.set(scale);
+    try {
+      localStorage.setItem("twynix-equipment-size", String(scale));
+    } catch {
+      /* The control still works when browser storage is unavailable. */
+    }
+    this.fit();
+  }
   wheel(e: WheelEvent) {
     e.preventDefault();
     this.zoom.set(
@@ -472,7 +496,7 @@ export class App {
       return;
     }
     const size = this.canvasSize();
-    const scale = this.equipmentScale;
+    const scale = this.equipmentScale();
     const minX = Math.min(...items.map((e) => e.x)) - 18 * scale;
     const maxX = Math.max(...items.map((e) => e.x)) + 138 * scale;
     const minY = Math.min(...items.map((e) => e.y)) - 47 * scale;
@@ -517,10 +541,10 @@ export class App {
     const a = this.project()?.equipment.find((e) => e.id === c.from),
       b = this.project()?.equipment.find((e) => e.id === c.to);
     if (!a || !b) return "";
-    const x = a.x + (c.fromPort === "level" ? 60 : 120) * this.equipmentScale,
-      y = a.y + (c.fromPort === "level" ? 120 : 60) * this.equipmentScale,
+    const x = a.x + (c.fromPort === "level" ? 60 : 120) * this.equipmentScale(),
+      y = a.y + (c.fromPort === "level" ? 120 : 60) * this.equipmentScale(),
       tx = b.x,
-      ty = b.y + 60 * this.equipmentScale;
+      ty = b.y + 60 * this.equipmentScale();
     return `M${x} ${y}H${(x + tx) / 2}V${ty}H${tx}`;
   }
   editRemoveConnection(id: string) {

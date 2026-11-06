@@ -127,3 +127,60 @@ test("larger symbols and moving products use the full live canvas; palette retur
     ]),
   );
 });
+
+test("symbol-size slider updates live graphics and connections, remembers size, and never edits the project", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/control", { data: { action: "stop", speed: 1 } });
+  await request.post("/api/projects/open", { data: { id: "production-line" } });
+  const original = await (await request.get("/api/project")).json();
+  await page.goto("/");
+  const slider = page.getByRole("slider", { name: "Equipment symbol size" });
+  await expect(slider).toHaveValue("135");
+  await slider.focus();
+  await slider.press("Home");
+  await expect(slider).toHaveValue("80");
+  await expect(page.locator(".symbol-size-control output")).toHaveText("80%");
+  await expectEquipmentInView(page);
+  const art = page.locator('[data-equipment-id="conveyor"] .glyph-art');
+  const small = (await art.boundingBox())!.width;
+  await page.getByRole("button", { name: "▶ Start", exact: true }).click();
+  await expect(page.locator(".library")).toBeHidden();
+  await slider.focus();
+  await slider.press("End");
+  await slider.press("ArrowLeft");
+  await expect(slider).toHaveValue("155");
+  await expect(page.locator(".symbol-size-control output")).toHaveText("155%");
+  await expect
+    .poll(async () => (await art.boundingBox())?.width ?? 0)
+    .toBeGreaterThan(small * 1.4);
+  await expectEquipmentInView(page);
+  const distance = await page.locator("svg.canvas").evaluate((svg) => {
+    const path = svg.querySelector<SVGPathElement>("path.connection")!;
+    const port = svg.querySelector<SVGCircleElement>(
+      '[data-equipment-id="feeder"] .port',
+    )!;
+    const a = path.getPointAtLength(0).matrixTransform(path.getScreenCTM()!);
+    const b = new DOMPoint(
+      port.cx.baseVal.value,
+      port.cy.baseVal.value,
+    ).matrixTransform(port.getScreenCTM()!);
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  });
+  expect(distance).toBeLessThan(1);
+  const before = (await (await request.get("/api/snapshot")).json()).time;
+  await page.reload();
+  await expect(slider).toHaveValue("155");
+  await expect(page.locator(".library")).toBeHidden();
+  const after = await (await request.get("/api/snapshot")).json();
+  expect(after.status).toBe("running");
+  expect(after.time).toBeGreaterThanOrEqual(before);
+  expect(await (await request.get("/api/project")).json()).toEqual(original);
+  await page.evaluate(() =>
+    localStorage.setItem("twynix-equipment-size", "9999"),
+  );
+  await page.reload();
+  await expect(slider).toHaveValue("135");
+  await request.post("/api/control", { data: { action: "stop" } });
+});
