@@ -21,6 +21,7 @@ For an isolated local test with unsecured OPC UA transport, explicitly set `OPCU
 
 ## Try the production line
 
+- Click **Full-screen live view** in the top toolbar to hide the palette, properties, events, and editing chrome. Runtime controls, metrics and the Symbols slider stay available. Use **Exit full-screen** or **Esc** to restore the editor; entering or leaving this view never starts, stops or resets the simulation.
 - Use the **Symbols** slider in the drawing toolbar to set equipment and product size (80–160%). It works while running, adjusts connection anchors, and remembers your choice in this browser.
 - The equipment palette hides automatically while running and returns on Pause/Stop. The drawing fits the available workspace, with larger equipment and product symbols.
 - Watch the shaded SVG equipment: packages are drawn from actual backend WIP, not a decorative animation. Every station shows its operating state; a full buffer blocks upstream equipment and a stopped feeder eventually starves downstream equipment.

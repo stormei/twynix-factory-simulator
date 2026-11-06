@@ -1,5 +1,5 @@
 <svg graphicsDefs class="svg-resources" aria-hidden="true"></svg>
-<header class="titlebar">
+<header class="titlebar" [hidden]="fullScreenLive()">
   <a class="brand" href="/" aria-label="Twynix home"
     ><span class="brandmark">◈</span> TWYNIX<span class="brand-divider"></span
     ><span class="product">FACTORY SIMULATOR</span></a
@@ -16,7 +16,7 @@
   ></span>
 </header>
 <nav class="toolbar">
-  <div class="tools">
+  <div class="tools" [hidden]="fullScreenLive()">
     <button mat-button (click)="newProject()">＋ New</button
     ><button mat-button (click)="openList()">Open</button
     ><button mat-button (click)="save()">Save</button
@@ -37,6 +37,14 @@
       ↷
     </button>
   </div>
+  @if(fullScreenLive()){
+  <div class="live-project-context">
+    <span class="brandmark">◈</span>
+    <div>
+      <small>TWYNIX · LIVE VIEW</small><strong>{{project()?.name}}</strong>
+    </div>
+  </div>
+  }
   <div class="runtime-controls">
     <button
       mat-flat-button
@@ -63,14 +71,21 @@
   </div>
   <div class="opc-status">
     <span class="status-dot" [class.good]="runtime()?.opcua?.running"></span>
-    OPC UA <span class="muted">:4840</span>
+    OPC UA <span class="muted">:4840</span><span class="divider"></span
+    ><button
+      class="live-view-toggle"
+      [attr.aria-pressed]="fullScreenLive()"
+      (click)="toggleLiveView()"
+    >
+      {{fullScreenLive()?'Exit full-screen':'Full-screen live view'}}
+    </button>
   </div>
 </nav>
 <main [class.live-mode]="runtime()?.status==='running'">
   <aside
     class="library"
     aria-label="Equipment library"
-    [hidden]="runtime()?.status==='running'"
+    [hidden]="runtime()?.status==='running'||fullScreenLive()"
   >
     <div class="panel-heading">
       EQUIPMENT LIBRARY <span>{{catalog.length}}</span>
@@ -111,7 +126,7 @@
   </aside>
   <section class="workspace">
     <div class="canvas-toolbar">
-      <div class="view-tabs">
+      <div class="view-tabs" [hidden]="fullScreenLive()">
         <button
           [class.active]="view()==='drawing'"
           (click)="switchView('drawing')"
@@ -126,6 +141,14 @@
           Experiments
         </button>
       </div>
+      @if(fullScreenLive()){
+      <div class="live-view-caption">
+        <span class="status-dot" [class.good]="connected()"></span
+        >{{connected()?'Runtime connected':'Runtime disconnected'}}<span
+          >Esc to exit live view</span
+        >
+      </div>
+      }
       <div class="canvas-actions">
         <label class="symbol-size-control" [hidden]="view()!=='drawing'">
           <span>Symbols</span
@@ -140,11 +163,24 @@
             (input)="setEquipmentSize($any($event.target).value)"
           /><output>{{(equipmentScale()*100).toFixed(0)}}%</output>
         </label>
-        <button (click)="copy();paste()" matTooltip="Duplicate selection">
+        <button
+          (click)="copy();paste()"
+          matTooltip="Duplicate selection"
+          [hidden]="fullScreenLive()"
+        >
           ⧉</button
-        ><button (click)="align()" matTooltip="Align selected equipment">
+        ><button
+          (click)="align()"
+          matTooltip="Align selected equipment"
+          [hidden]="fullScreenLive()"
+        >
           ≡</button
-        ><button (click)="delete()" matTooltip="Delete selection">⌫</button
+        ><button
+          (click)="delete()"
+          matTooltip="Delete selection"
+          [hidden]="fullScreenLive()"
+        >
+          ⌫</button
         ><span class="divider"></span><button (click)="fit()">Fit view</button
         ><span>{{(zoom()*100).toFixed(0)}}%</span>
       </div>
@@ -574,7 +610,10 @@
       </section>
     </div>
     }
-    <div class="diagnostics" [hidden]="view()==='experiments'">
+    <div
+      class="diagnostics"
+      [hidden]="view()==='experiments'||fullScreenLive()"
+    >
       <div class="diagnostic-tabs">
         <button [class.active]="tab()==='events'" (click)="tab.set('events')">
           Events <span>{{runtime()?.events?.length || 0}}</span></button
@@ -661,7 +700,11 @@
       }
     </div>
   </section>
-  <aside class="properties">
+  <aside
+    class="properties"
+    aria-label="Equipment properties"
+    [hidden]="fullScreenLive()"
+  >
     <div class="panel-heading">PROPERTIES <span>⚙</span></div>
     @if(selectedEquipment();as item){
     <div class="selected-heading">
@@ -793,7 +836,7 @@
     }
   </aside>
 </main>
-<footer>
+<footer [hidden]="fullScreenLive()">
   <span
     ><span class="status-dot" [class.good]="connected()"></span>
     {{connected()?'Runtime connected':'Runtime disconnected'}}</span

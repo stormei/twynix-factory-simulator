@@ -1466,3 +1466,79 @@ th {
     monospace;
   color: #6c8797;
 }
+
+.live-view-toggle {
+  border: 1px solid #d6e6e3;
+  background: #f0f8f6;
+  color: #397f73;
+  white-space: nowrap;
+}
+.opc-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+app-root.full-screen-live {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  min-width: 0;
+  background: var(--bg);
+}
+.full-screen-live main {
+  grid-template-columns: minmax(0, 1fr);
+}
+.live-project-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 330px;
+}
+.live-project-context .brandmark {
+  font-size: 26px;
+  color: #2b9a8d;
+}
+.live-project-context > div {
+  min-width: 0;
+}
+.live-project-context small {
+  display: block;
+  font-size: 7px;
+  letter-spacing: 1.6px;
+  color: #8ca4b2;
+  margin-bottom: 5px;
+}
+.live-project-context strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 550;
+  color: #547183;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live-view-caption {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  color: #789691;
+}
+.live-view-caption > span:last-child {
+  color: #9fb0bc;
+  margin-left: 17px;
+  font-size: 8px;
+}
+@media (max-width: 1150px) {
+  .full-screen-live .live-project-context {
+    max-width: 200px;
+  }
+  .full-screen-live .toolbar {
+    gap: 6px;
+    padding-inline: 12px;
+  }
+  .full-screen-live .toolbar button {
+    padding-inline: 8px;
+  }
+}

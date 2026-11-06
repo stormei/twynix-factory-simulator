@@ -39,6 +39,7 @@ import { EquipmentSymbol } from "./symbol";
     GraphicsDefinitions,
   ],
   templateUrl: "./app.html",
+  host: { "[class.full-screen-live]": "fullScreenLive()" },
 })
 export class App {
   project = signal<Project | null>(null);
@@ -117,6 +118,9 @@ export class App {
       ),
   );
 
+  fullScreenLive = signal(false);
+  private previousView: "drawing" | "io" | "experiments" = "drawing";
+  private ownsFullscreen = false;
   equipmentScale = signal(this.readEquipmentScale());
   canvasSize = signal({ width: 1400, height: 760 });
   private readonly destroyRef = inject(DestroyRef);
@@ -350,6 +354,7 @@ export class App {
   }
   drop(e: DragEvent) {
     e.preventDefault();
+    if (this.fullScreenLive()) return;
     const type = e.dataTransfer?.getData("equipment") as EquipmentType;
     if (!definitions[type]) return;
     const pt = this.point(e);
@@ -395,7 +400,7 @@ export class App {
           : [...ids, item.id],
       );
     else if (!this.selected().includes(item.id)) this.selected.set([item.id]);
-    if (this.runtime()?.status === "running") return;
+    if (this.runtime()?.status === "running" || this.fullScreenLive()) return;
     const pt = this.point(e);
     this.drag = {
       x: pt.x,
@@ -457,6 +462,64 @@ export class App {
     this.drag = null;
     if (JSON.stringify(before) !== JSON.stringify(this.project()))
       void this.commit(before);
+  }
+  async toggleLiveView(): Promise<void> {
+    if (this.fullScreenLive()) {
+      await this.exitLiveView();
+      return;
+    }
+    this.previousView = this.view();
+    this.view.set("drawing");
+    this.connecting.set(null);
+    this.drag = null;
+    this.fullScreenLive.set(true);
+    try {
+      if (
+        !document.fullscreenElement &&
+        document.documentElement.requestFullscreen
+      ) {
+        await document.documentElement.requestFullscreen();
+        this.ownsFullscreen =
+          document.fullscreenElement === document.documentElement;
+        if (!this.fullScreenLive() && this.ownsFullscreen) {
+          this.ownsFullscreen = false;
+          await document.exitFullscreen();
+        }
+      }
+    } catch {
+      /* Expanded live layout also works when native fullscreen is unavailable. */
+    }
+  }
+  private restoreLiveLayout(): void {
+    this.fullScreenLive.set(false);
+    this.view.set(this.previousView);
+    requestAnimationFrame(() =>
+      document
+        .querySelector<HTMLButtonElement>(".live-view-toggle")
+        ?.focus({ preventScroll: true }),
+    );
+  }
+  async exitLiveView(): Promise<void> {
+    const exitNative =
+      this.ownsFullscreen &&
+      document.fullscreenElement === document.documentElement;
+    this.ownsFullscreen = false;
+    this.restoreLiveLayout();
+    if (exitNative)
+      try {
+        await document.exitFullscreen();
+      } catch {
+        /* Layout is already restored if the browser closes fullscreen first. */
+      }
+  }
+  @HostListener("document:fullscreenchange") fullscreenChanged(): void {
+    if (
+      this.ownsFullscreen &&
+      document.fullscreenElement !== document.documentElement
+    ) {
+      this.ownsFullscreen = false;
+      this.restoreLiveLayout();
+    }
   }
   private readEquipmentScale(): number {
     try {
@@ -520,6 +583,7 @@ export class App {
   }
 
   port(item: Equipment, port: string) {
+    if (this.fullScreenLive()) return;
     const from = this.connecting();
     if (!from) {
       this.connecting.set({ id: item.id, port });
@@ -789,6 +853,14 @@ export class App {
     return `ns=2;s=project/${this.project()?.id}/equipment/${this.selectedEquipment()?.id}/${tag}`;
   }
   @HostListener("window:keydown", ["$event"]) key(e: KeyboardEvent) {
+    if (this.fullScreenLive()) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        void this.exitLiveView();
+      } else if (e.key === "Delete" || e.key === "Backspace")
+        e.preventDefault();
+      return;
+    }
     if (
       ["INPUT", "SELECT", "TEXTAREA"].includes(
         (e.target as HTMLElement).tagName,
