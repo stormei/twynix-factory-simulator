@@ -1,5 +1,13 @@
 import { bootstrapApplication } from "@angular/platform-browser";
-import { Component, signal, computed, HostListener } from "@angular/core";
+import {
+  Component,
+  signal,
+  computed,
+  HostListener,
+  afterNextRender,
+  DestroyRef,
+  inject,
+} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -109,6 +117,9 @@ export class App {
       ),
   );
 
+  readonly equipmentScale = 1.5;
+  canvasSize = signal({ width: 1400, height: 760 });
+  private readonly destroyRef = inject(DestroyRef);
   zoom = signal(0.85);
   pan = signal({ x: 15, y: 70 });
   connecting = signal<{ id: string; port: string } | null>(null);
@@ -126,6 +137,18 @@ export class App {
   private socket?: WebSocket;
   private disposed = false;
   constructor() {
+    afterNextRender(() => {
+      const drawing = document.querySelector(".drawing");
+      if (!drawing) return;
+      const observer = new ResizeObserver((entries) => {
+        const { width, height } = entries[0].contentRect;
+        if (width < 1 || height < 1) return;
+        this.canvasSize.set({ width, height });
+        this.fit();
+      });
+      observer.observe(drawing);
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
     void this.load();
     window.addEventListener("beforeunload", () => {
       this.disposed = true;
@@ -403,8 +426,16 @@ export class App {
   move(e: PointerEvent) {
     if (this.panning) {
       this.pan.set({
-        x: this.panning.px + (e.clientX - this.panning.x),
-        y: this.panning.py + (e.clientY - this.panning.y),
+        x:
+          this.panning.px +
+          (e.clientX - this.panning.x) /
+            (document.querySelector<SVGSVGElement>("svg.canvas")?.getScreenCTM()
+              ?.a ?? 1),
+        y:
+          this.panning.py +
+          (e.clientY - this.panning.y) /
+            (document.querySelector<SVGSVGElement>("svg.canvas")?.getScreenCTM()
+              ?.d ?? 1),
       });
     }
     if (!this.drag) return;
@@ -430,7 +461,7 @@ export class App {
   wheel(e: WheelEvent) {
     e.preventDefault();
     this.zoom.set(
-      Math.max(0.3, Math.min(2, this.zoom() + (e.deltaY > 0 ? -0.05 : 0.05))),
+      Math.max(0.1, Math.min(4, this.zoom() + (e.deltaY > 0 ? -0.05 : 0.05))),
     );
   }
   fit() {
@@ -440,17 +471,30 @@ export class App {
       this.pan.set({ x: 0, y: 0 });
       return;
     }
-    const minX = Math.min(...items.map((e) => e.x)) - 30,
-      maxX = Math.max(...items.map((e) => e.x)) + 150;
-    const minY = Math.min(...items.map((e) => e.y)) - 55,
-      maxY = Math.max(...items.map((e) => e.y)) + 210;
-    const zoom = Math.min(1.5, 1280 / (maxX - minX), 500 / (maxY - minY));
+    const size = this.canvasSize();
+    const scale = this.equipmentScale;
+    const minX = Math.min(...items.map((e) => e.x)) - 18 * scale;
+    const maxX = Math.max(...items.map((e) => e.x)) + 138 * scale;
+    const minY = Math.min(...items.map((e) => e.y)) - 47 * scale;
+    const maxY = Math.max(...items.map((e) => e.y)) + 210 * scale;
+    const left = 28,
+      right = 28,
+      top = size.height < 360 ? 88 : 116,
+      bottom = 34;
+    const availableWidth = Math.max(1, size.width - left - right);
+    const availableHeight = Math.max(1, size.height - top - bottom);
+    const zoom = Math.min(
+      2.2,
+      availableWidth / (maxX - minX),
+      availableHeight / (maxY - minY),
+    );
     this.zoom.set(zoom);
     this.pan.set({
-      x: 700 - ((minX + maxX) / 2) * zoom,
-      y: 415 - ((minY + maxY) / 2) * zoom,
+      x: left + availableWidth / 2 - ((minX + maxX) / 2) * zoom,
+      y: top + availableHeight / 2 - ((minY + maxY) / 2) * zoom,
     });
   }
+
   port(item: Equipment, port: string) {
     const from = this.connecting();
     if (!from) {
@@ -473,10 +517,10 @@ export class App {
     const a = this.project()?.equipment.find((e) => e.id === c.from),
       b = this.project()?.equipment.find((e) => e.id === c.to);
     if (!a || !b) return "";
-    const x = a.x + (c.fromPort === "level" ? 60 : 120),
-      y = a.y + (c.fromPort === "level" ? 120 : 60),
+    const x = a.x + (c.fromPort === "level" ? 60 : 120) * this.equipmentScale,
+      y = a.y + (c.fromPort === "level" ? 120 : 60) * this.equipmentScale,
       tx = b.x,
-      ty = b.y + 60;
+      ty = b.y + 60 * this.equipmentScale;
     return `M${x} ${y}H${(x + tx) / 2}V${ty}H${tx}`;
   }
   editRemoveConnection(id: string) {

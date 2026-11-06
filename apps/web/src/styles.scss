@@ -214,6 +214,9 @@ main {
   flex: 1;
   min-height: 0;
 }
+main.live-mode {
+  grid-template-columns: minmax(500px, 1fr) 278px;
+}
 .library,
 .properties {
   background: var(--panel);
@@ -1431,4 +1434,8 @@ th {
 }
 .state-indicator.flowing {
   fill: #39a786;
+}
+/* Selection outlines must not cover the neighboring symbol's connection ports. */
+.selection-frame {
+  pointer-events: none;
 }

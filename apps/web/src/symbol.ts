@@ -17,6 +17,14 @@ import { EquipmentGlyph } from "./glyph";
       [class.is-selected]="selected()"
     />
     <svg:rect
+      class="equipment-hit-area"
+      x="0"
+      y="0"
+      width="120"
+      height="120"
+      fill="transparent"
+    />
+    <svg:rect
       x="24"
       y="-33"
       width="72"

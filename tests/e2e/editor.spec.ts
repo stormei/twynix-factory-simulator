@@ -52,12 +52,25 @@ test("editor and headless runtime work end to end", async ({
   await page.getByRole("button", { name: "Centrifugal pump" }).dblclick();
   await expect(page.locator("g[equipmentSymbol]")).toHaveCount(8);
   const newPump = page.locator("g[equipmentSymbol]").last();
-  const box = await newPump.boundingBox();
+  const box = await newPump.locator(".equipment-hit-area").boundingBox();
   expect(box).toBeTruthy();
-  await page.mouse.move(box!.x + 60, box!.y + 60);
+  const positionBefore = (
+    await (await request.get("/api/project")).json()
+  ).equipment.at(-1);
+  const grabX = box!.x + box!.width / 2,
+    grabY = box!.y + box!.height / 2;
+  await page.mouse.move(grabX, grabY);
   await page.mouse.down();
-  await page.mouse.move(box!.x + 130, box!.y + 100, { steps: 8 });
+  await page.mouse.move(grabX + 70, grabY + 40, { steps: 8 });
   await page.mouse.up();
+  await expect
+    .poll(async () => {
+      const item = (
+        await (await request.get("/api/project")).json()
+      ).equipment.at(-1);
+      return item.x !== positionBefore.x || item.y !== positionBefore.y;
+    })
+    .toBe(true);
   await page.getByLabel("Label", { exact: true }).fill("Transfer pump");
   await page.getByLabel("Label", { exact: true }).press("Tab");
   await expect

@@ -21,6 +21,7 @@ For an isolated local test with unsecured OPC UA transport, explicitly set `OPCU
 
 ## Try the production line
 
+- The equipment palette hides automatically while running and returns on Pause/Stop. The drawing fits the available workspace, with larger equipment and product symbols.
 - Watch the shaded SVG equipment: packages are drawn from actual backend WIP, not a decorative animation. Every station shows its operating state; a full buffer blocks upstream equipment and a stopped feeder eventually starves downstream equipment.
 - The live strip shows good output, throughput, WIP, completed-product lead time, processing utilization and the busiest workstation. **Performance** shows each station's occupancy, starvation, blockage and fault duration.
 - Open **I/O signals** to search equipment/tags, filter commands versus measurements, inspect quality/control ownership, change manual commands/setpoints, and copy stable OPC UA NodeIds. Click a signal name to inspect its equipment. External and automatic ownership disable manual writes.
