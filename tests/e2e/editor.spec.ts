@@ -6,6 +6,8 @@ test("editor and headless runtime work end to end", async ({
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  await request.post("/api/control", { data: { action: "stop" } });
+  await request.post("/api/projects/open", { data: { id: "water-treatment" } });
   await page.goto("/");
   await expect(
     page.getByText("Runtime connected", { exact: true }),

@@ -41,7 +41,7 @@ export const demo: Project = {
     equipment("flow", "flow-sensor", "FT-101", 620, 240),
     equipment("tank", "tank", "T-101", 820, 210),
     equipment("outlet", "valve", "XV-102", 1060, 240),
-    equipment("level", "level-sensor", "LT-101", 820, 440),
+    equipment("level", "level-sensor", "LT-101", 820, 480),
   ],
   connections: [
     { id: "c1", from: "source", fromPort: "out", to: "pump", toPort: "in" },

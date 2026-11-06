@@ -45,7 +45,11 @@
               "motor",
               "photo-sensor",
               "machine",
-              "counter"
+              "counter",
+              "material-source",
+              "buffer",
+              "inspection",
+              "sink"
             ]
           },
           "tag": {

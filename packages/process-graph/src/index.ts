@@ -40,6 +40,7 @@ export function validateProject(p: Project): void {
       "actuationTime",
       "length",
       "cycleTime",
+      "interval",
     ])
       if (key in params && params[key] <= 0)
         throw Error(`${key} must be positive`);
@@ -49,6 +50,18 @@ export function validateProject(p: Project): void {
         params["initialVolume"] > params["capacity"])
     )
       throw Error("Initial volume outside tank capacity");
+    if (
+      e.type === "buffer" &&
+      (!Number.isInteger(params["capacity"]) ||
+        params["capacity"] < 1 ||
+        params["capacity"] > 100)
+    )
+      throw Error("Buffer capacity must be an integer from 1 to 100");
+    if (
+      e.type === "inspection" &&
+      (params["rejectRate"] < 0 || params["rejectRate"] > 1)
+    )
+      throw Error("Reject rate must be 0–1");
     for (const t of definitions[e.type].tags.filter((t) => t.writable)) {
       const v = e.commands[t.name];
       if (

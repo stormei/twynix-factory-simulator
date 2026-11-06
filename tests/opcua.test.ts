@@ -211,3 +211,70 @@ it("production profile requires encryption, trusted certificates and authenticat
     rmSync(folder, { recursive: true, force: true });
   }
 });
+
+it("publishes real production counts and queue tags and accepts conveyor commands through OPC UA", async () => {
+  const { productionDemo } = await import("../examples/production-line");
+  const project = structuredClone(productionDemo);
+  project.equipment.find((e) => e.id === "conveyor")!.mode = "external";
+  const folder = mkdtempSync(join(tmpdir(), "twynix-line-ua-"));
+  const sim = new Simulation(project);
+  const ua = await createOpcua(sim, {
+    port: 14843,
+    hostname: "localhost",
+    dev: true,
+    username: "operator",
+    password: "production-test-1234",
+    certificateDir: join(folder, "server"),
+  });
+  const manager = new OPCUACertificateManager({
+    rootFolder: join(folder, "client"),
+    automaticallyAcceptUnknownCertificate: true,
+  });
+  const client = OPCUAClient.create({
+    clientCertificateManager: manager,
+    endpointMustExist: false,
+    connectionStrategy: { maxRetry: 0 },
+  });
+  try {
+    await client.connect("opc.tcp://localhost:14843");
+    const session = await client.createSession({
+      type: UserTokenType.UserName,
+      userName: "operator",
+      password: "production-test-1234",
+    });
+    for (let i = 0; i < 400; i++) sim.step();
+    const counts = await session.read([
+      {
+        nodeId:
+          "ns=2;s=project/production-line/equipment/finished/ProductCount",
+        attributeId: AttributeIds.Value,
+      },
+      {
+        nodeId: "ns=2;s=project/production-line/equipment/buffer/QueueLength",
+        attributeId: AttributeIds.Value,
+      },
+      {
+        nodeId: "ns=2;s=project/production-line/simulation/WorkInProgress",
+        attributeId: AttributeIds.Value,
+      },
+    ]);
+    expect(counts.every((v) => v.statusCode.isGood())).toBe(true);
+    expect(Number(counts[0].value.value)).toBeGreaterThan(0);
+    expect(counts[2].value.value).toBe(sim.productionMetrics()?.wip);
+    const code = await session.write({
+      nodeId: "ns=2;s=project/production-line/equipment/conveyor/RunCommand",
+      attributeId: AttributeIds.Value,
+      value: { value: { dataType: DataType.Boolean, value: false } },
+    });
+    expect(code).toEqual(StatusCodes.Good);
+    for (let i = 0; i < 500; i++) sim.step();
+    expect(sim.states["conveyor"].values["RunFeedback"]).toBe(false);
+    expect(sim.states["machine"].status).toBe("starved");
+    await session.close();
+  } finally {
+    await client.disconnect();
+    await ua.close();
+    await manager.dispose();
+    rmSync(folder, { recursive: true, force: true });
+  }
+});

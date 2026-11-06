@@ -13,6 +13,10 @@ export const equipmentTypes = [
   "photo-sensor",
   "machine",
   "counter",
+  "material-source",
+  "buffer",
+  "inspection",
+  "sink",
 ] as const;
 export type EquipmentType = (typeof equipmentTypes)[number];
 export type Quality = "Good" | "Bad" | "Uncertain";
@@ -108,6 +112,7 @@ export const projectSchema = z.object({
 export type Project = z.infer<typeof projectSchema>;
 export interface EquipmentState {
   values: Record<string, Value>;
+  products?: { id: number; progress: number; rejected: boolean }[];
   quality: Quality;
   status: string;
 }
@@ -124,6 +129,7 @@ export interface Snapshot {
   revision: number;
   states: Record<string, EquipmentState>;
   events: RuntimeEvent[];
+  production: ProductionMetrics | null;
   opcua: {
     endpoint: string;
     sessions: number;
@@ -157,4 +163,64 @@ export interface SimulationComponent<TState, TParameters> {
 }
 export function migrateProject(input: unknown): Project {
   return projectSchema.parse(input);
+}
+
+export interface StationMetrics {
+  id: string;
+  tag: string;
+  status: string;
+  capacity: number;
+  occupancy: number;
+  busySeconds: number;
+  starvedSeconds: number;
+  blockedSeconds: number;
+  faultSeconds: number;
+  stoppedSeconds: number;
+  utilization: number;
+  output: number;
+}
+export interface ProductionMetrics {
+  generated: number;
+  completed: number;
+  rejected: number;
+  wip: number;
+  throughputPerHour: number;
+  averageCycleTime: number;
+  utilization: number;
+  downtimeSeconds: number;
+  bottleneck: { id: string; tag: string; utilization: number } | null;
+  stations: StationMetrics[];
+}
+export const experimentSchema = z.object({
+  duration: z.number().min(10).max(1800),
+  variants: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(60),
+        overrides: z
+          .array(
+            z.object({
+              equipmentId: z.string(),
+              parameter: z.string(),
+              value: z.number().finite(),
+            }),
+          )
+          .max(30),
+      }),
+    )
+    .min(1)
+    .max(4),
+});
+export type ExperimentRequest = z.infer<typeof experimentSchema>;
+export interface ExperimentResult {
+  name: string;
+  overrides: ExperimentRequest["variants"][number]["overrides"];
+  metrics: ProductionMetrics;
+}
+export interface ExperimentReport {
+  id: string;
+  project: Project;
+  createdAt: string;
+  duration: number;
+  results: ExperimentResult[];
 }

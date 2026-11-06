@@ -200,6 +200,31 @@ export async function createOpcua(sim: Simulation, options: UaOptions) {
       ["Running", DataType.Boolean, () => sim.status === "running"],
       ["SimulationTime", DataType.Double, () => sim.time],
       ["SpeedMultiplier", DataType.Double, () => sim.speed],
+      [
+        "GoodOutput",
+        DataType.Double,
+        () => sim.productionMetrics()?.completed ?? 0,
+      ],
+      [
+        "RejectedOutput",
+        DataType.Double,
+        () => sim.productionMetrics()?.rejected ?? 0,
+      ],
+      [
+        "WorkInProgress",
+        DataType.Double,
+        () => sim.productionMetrics()?.wip ?? 0,
+      ],
+      [
+        "Throughput",
+        DataType.Double,
+        () => sim.productionMetrics()?.throughputPerHour ?? 0,
+      ],
+      [
+        "AverageLeadTime",
+        DataType.Double,
+        () => sim.productionMetrics()?.averageCycleTime ?? 0,
+      ],
     ] as const)
       ns.addVariable({
         componentOf: control,

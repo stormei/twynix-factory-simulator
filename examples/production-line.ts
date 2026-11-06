@@ -1,0 +1,63 @@
+import type { Project } from "@twynix/shared-types";
+import { equipment } from "./water-treatment";
+export const productionDemo: Project = {
+  schemaVersion: 1,
+  id: "production-line",
+  name: "Precision Packaging Line",
+  seed: 2026,
+  equipment: [
+    equipment(
+      "feeder",
+      "material-source",
+      "FD-101",
+      40,
+      230,
+      { interval: 1.8 },
+      { RunCommand: true },
+    ),
+    equipment(
+      "conveyor",
+      "conveyor",
+      "CV-101",
+      240,
+      230,
+      { length: 3, speed: 1.2 },
+      { RunCommand: true },
+    ),
+    equipment("buffer", "buffer", "BF-101", 440, 230, { capacity: 4 }),
+    equipment(
+      "machine",
+      "machine",
+      "MC-101",
+      640,
+      230,
+      { cycleTime: 3.2 },
+      { RunCommand: true },
+    ),
+    equipment(
+      "inspection",
+      "inspection",
+      "VI-101",
+      840,
+      230,
+      { cycleTime: 1.8, rejectRate: 0.04 },
+      { RunCommand: true },
+    ),
+    equipment("finished", "sink", "FG-101", 1040, 230),
+  ],
+  connections: [
+    ["feeder", "conveyor"],
+    ["conveyor", "buffer"],
+    ["buffer", "machine"],
+    ["machine", "inspection"],
+    ["inspection", "finished"],
+  ].map(([from, to], i) => ({
+    id: "material-" + i,
+    from,
+    fromPort: "out",
+    to,
+    toPort: "in",
+  })),
+  controllers: [],
+  scenarios: [],
+};

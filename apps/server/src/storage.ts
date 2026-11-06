@@ -1,10 +1,17 @@
 import Database from "better-sqlite3";
-import { migrateProject, type Project } from "@twynix/shared-types";
+import {
+  migrateProject,
+  type Project,
+  type ExperimentReport,
+} from "@twynix/shared-types";
 export class ProjectStore {
   private db: Database.Database;
   constructor(path: string) {
     this.db = new Database(path);
     this.db.pragma("journal_mode = WAL");
+    this.db.exec(
+      "CREATE TABLE IF NOT EXISTS experiments (id TEXT PRIMARY KEY, project_id TEXT NOT NULL, created TEXT NOT NULL, report TEXT NOT NULL)",
+    );
     this.db.exec(
       "CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, name TEXT NOT NULL, definition TEXT NOT NULL, updated TEXT NOT NULL)",
     );
@@ -30,6 +37,25 @@ export class ProjectStore {
   }
   delete(id: string): void {
     this.db.prepare("DELETE FROM projects WHERE id=?").run(id);
+  }
+  saveExperiment(report: ExperimentReport): void {
+    this.db
+      .prepare("INSERT INTO experiments VALUES (?,?,?,?)")
+      .run(
+        report.id,
+        report.project.id,
+        report.createdAt,
+        JSON.stringify(report),
+      );
+  }
+  experiments(projectId: string): ExperimentReport[] {
+    return (
+      this.db
+        .prepare(
+          "SELECT report FROM experiments WHERE project_id=? ORDER BY created DESC LIMIT 10",
+        )
+        .all(projectId) as { report: string }[]
+    ).map((row) => JSON.parse(row.report) as ExperimentReport);
   }
   close(): void {
     this.db.close();

@@ -5,17 +5,32 @@ import { mkdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { z } from "zod";
-import { projectSchema, type Snapshot } from "@twynix/shared-types";
+import {
+  projectSchema,
+  experimentSchema,
+  type ExperimentReport,
+  type Snapshot,
+} from "@twynix/shared-types";
 import { definitions } from "@twynix/equipment-models";
 import { Simulation } from "@twynix/simulation-core";
 import { createOpcua } from "@twynix/opcua-server";
 import { demo } from "../../../examples/water-treatment.js";
+import { productionDemo } from "../../../examples/production-line.js";
+import { runExperiments } from "../../../packages/simulation-core/src/experiments.js";
+import { randomUUID } from "node:crypto";
+import { setImmediate as yieldImmediate } from "node:timers/promises";
 import { ProjectStore } from "./storage.js";
 const dir = resolve(process.env["DATA_DIR"] ?? "data");
 mkdirSync(dir, { recursive: true });
 const store = new ProjectStore(resolve(dir, "projects.sqlite"));
-if (!store.list().length) store.save(demo);
-const sim = new Simulation(store.get(store.list()[0].id));
+const savedProjects = store.list();
+if (!savedProjects.some((p) => p.id === demo.id)) store.save(demo);
+if (!savedProjects.some((p) => p.id === productionDemo.id))
+  store.save(productionDemo);
+// Preserve the last saved user project when upgrading; new installations open the production demo.
+const sim = new Simulation(
+  store.get(savedProjects[0]?.id ?? productionDemo.id),
+);
 const app = Fastify({ logger: true, bodyLimit: 2_000_000 });
 const host = process.env["HOST"] ?? "127.0.0.1";
 const apiToken = process.env["API_TOKEN"];
@@ -64,6 +79,31 @@ app.get("/api/catalog", () => definitions);
 app.get("/api/project", () => sim.project);
 app.get("/api/snapshot", () => sim.snapshot());
 app.get("/api/projects", () => store.list());
+let experimentRunning = false;
+app.get("/api/experiments", () => store.experiments(sim.project.id));
+app.post("/api/experiments", async (req) => {
+  if (experimentRunning)
+    throw Error("Another experiment is running; wait for it to finish");
+  const request = experimentSchema.parse(req.body);
+  const project = structuredClone(sim.project);
+  experimentRunning = true;
+  try {
+    const results = await runExperiments(project, request, () =>
+      yieldImmediate(),
+    );
+    const report: ExperimentReport = {
+      id: randomUUID(),
+      project,
+      createdAt: new Date().toISOString(),
+      duration: Math.floor(request.duration * 10) / 10,
+      results,
+    };
+    store.saveExperiment(report);
+    return report;
+  } finally {
+    experimentRunning = false;
+  }
+});
 app.post("/api/project", async (req) => {
   const p = projectSchema.parse(req.body);
   sim.replace(p);

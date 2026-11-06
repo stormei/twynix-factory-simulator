@@ -11,9 +11,12 @@ import type {
   Snapshot,
   Value,
   Connection,
+  ExperimentReport,
+  ExperimentRequest,
 } from "@twynix/shared-types";
 import { definitions } from "@twynix/equipment-models";
 import { equipment } from "../../../examples/water-treatment";
+import { EquipmentGlyph, GraphicsDefinitions } from "./glyph";
 import { EquipmentSymbol } from "./symbol";
 @Component({
   selector: "app-root",
@@ -24,6 +27,8 @@ import { EquipmentSymbol } from "./symbol";
     MatButtonModule,
     MatTooltipModule,
     EquipmentSymbol,
+    EquipmentGlyph,
+    GraphicsDefinitions,
   ],
   templateUrl: "./app.html",
 })
@@ -48,6 +53,62 @@ export class App {
   projects = signal<{ id: string; name: string }[]>([]);
   showProjects = signal(false);
   tab = signal("events");
+  view = signal<"drawing" | "io" | "experiments">("drawing");
+  ioSearch = signal("");
+  ioFilter = signal("all");
+  experimentBusy = signal(false);
+  reports = signal<ExperimentReport[]>([]);
+  report = signal<ExperimentReport | null>(null);
+  experimentDuration = 180;
+  bufferCapacity = 8;
+  machineCycleTime = 2.4;
+  scheduleEquipment = "";
+  scheduleFault = "jam";
+  scheduleStart = 20;
+  scheduleEnd = 50;
+  primaryBuffer = computed(() =>
+    this.project()?.equipment.find((e) => e.type === "buffer"),
+  );
+  primaryMachine = computed(() =>
+    this.project()?.equipment.find((e) => e.type === "machine"),
+  );
+  ioRows = computed(() =>
+    (this.project()?.equipment ?? [])
+      .flatMap((e) =>
+        definitions[e.type].tags.map((tag) => ({
+          equipment: e,
+          tag,
+          value:
+            tag.writable && e.mode !== "automatic"
+              ? e.commands[tag.name]
+              : this.runtime()?.states[e.id]?.values[tag.name],
+          quality: this.runtime()?.states[e.id]?.quality ?? "Bad",
+          nodeId: `ns=2;s=project/${this.project()?.id}/equipment/${e.id}/${tag.name}`,
+        })),
+      )
+      .filter(
+        (row) =>
+          this.ioSearch()
+            .toLowerCase()
+            .trim()
+            .split(/\s+/)
+            .every((token) =>
+              (
+                row.equipment.tag +
+                " " +
+                row.equipment.label +
+                " " +
+                row.tag.name
+              )
+                .toLowerCase()
+                .includes(token),
+            ) &&
+          (this.ioFilter() === "all" ||
+            (this.ioFilter() === "commands" && row.tag.writable) ||
+            (this.ioFilter() === "measurements" && !row.tag.writable)),
+      ),
+  );
+
   zoom = signal(0.85);
   pan = signal({ x: 15, y: 70 });
   connecting = signal<{ id: string; port: string } | null>(null);
@@ -97,6 +158,7 @@ export class App {
       this.project.set(await this.api<Project>("project"));
       this.runtime.set(await this.api<Snapshot>("snapshot"));
       this.connect();
+      this.fit();
     });
   }
   connect() {
@@ -203,6 +265,10 @@ export class App {
       this.undoStack = [];
       this.redoStack = [];
       this.showProjects.set(false);
+      this.fit();
+      this.reports.set([]);
+      this.report.set(null);
+      if (this.view() === "experiments") void this.refreshExperiments();
     });
   }
   async removeProject(id: string) {
@@ -285,16 +351,17 @@ export class App {
   }
   point(e: MouseEvent) {
     const svg = document.querySelector("svg.canvas")!;
-    const rect = svg.getBoundingClientRect();
+    const point = (svg as SVGSVGElement).createSVGPoint();
+    point.x = e.clientX;
+    point.y = e.clientY;
+    const screen = (svg as SVGSVGElement).getScreenCTM();
+    const local = screen ? point.matrixTransform(screen.inverse()) : point;
     return {
-      x:
-        (((e.clientX - rect.left) * 1400) / rect.width - this.pan().x) /
-        this.zoom(),
-      y:
-        (((e.clientY - rect.top) * 760) / rect.height - this.pan().y) /
-        this.zoom(),
+      x: (local.x - this.pan().x) / this.zoom(),
+      y: (local.y - this.pan().y) / this.zoom(),
     };
   }
+
   down(e: PointerEvent, item: Equipment) {
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -367,8 +434,22 @@ export class App {
     );
   }
   fit() {
-    this.zoom.set(0.85);
-    this.pan.set({ x: 15, y: 70 });
+    const items = this.project()?.equipment ?? [];
+    if (!items.length) {
+      this.zoom.set(1);
+      this.pan.set({ x: 0, y: 0 });
+      return;
+    }
+    const minX = Math.min(...items.map((e) => e.x)) - 30,
+      maxX = Math.max(...items.map((e) => e.x)) + 150;
+    const minY = Math.min(...items.map((e) => e.y)) - 55,
+      maxY = Math.max(...items.map((e) => e.y)) + 210;
+    const zoom = Math.min(1.5, 1280 / (maxX - minX), 500 / (maxY - minY));
+    this.zoom.set(zoom);
+    this.pan.set({
+      x: 700 - ((minX + maxX) / 2) * zoom,
+      y: 415 - ((minY + maxY) / 2) * zoom,
+    });
   }
   port(item: Equipment, port: string) {
     const from = this.connecting();
@@ -488,6 +569,131 @@ export class App {
       });
       this.project.set(await this.api("project"));
     });
+  }
+  async switchView(view: "drawing" | "io" | "experiments") {
+    this.view.set(view);
+    if (view === "experiments") await this.refreshExperiments();
+  }
+  async refreshExperiments() {
+    await this.attempt(async () => {
+      const reports = await this.api<ExperimentReport[]>("experiments");
+      this.reports.set(reports);
+      this.report.set(reports[0] ?? null);
+    });
+  }
+  async runExperiment() {
+    if (this.experimentBusy()) return;
+    this.experimentBusy.set(true);
+    await this.attempt(async () => {
+      const variants: ExperimentRequest["variants"] = [
+        { name: "Baseline", overrides: [] },
+      ];
+      const buffer = this.primaryBuffer(),
+        machine = this.primaryMachine();
+      if (buffer)
+        variants.push({
+          name: "Larger buffer",
+          overrides: [
+            {
+              equipmentId: buffer.id,
+              parameter: "capacity",
+              value: Number(this.bufferCapacity),
+            },
+          ],
+        });
+      if (machine)
+        variants.push({
+          name: "Faster machine",
+          overrides: [
+            {
+              equipmentId: machine.id,
+              parameter: "cycleTime",
+              value: Number(this.machineCycleTime),
+            },
+          ],
+        });
+      const report = await this.api<ExperimentReport>("experiments", {
+        duration: Number(this.experimentDuration),
+        variants,
+      });
+      this.report.set(report);
+      this.reports.update((list) => [report, ...list].slice(0, 10));
+      this.notice.set("Experiment complete · live simulation unchanged");
+    });
+    this.experimentBusy.set(false);
+  }
+  chooseReport(id: string) {
+    this.report.set(this.reports().find((r) => r.id === id) ?? null);
+  }
+  schedule() {
+    const id =
+      this.scheduleEquipment ||
+      this.primaryMachine()?.id ||
+      this.project()?.equipment[0]?.id;
+    if (!id) return;
+    if (
+      !Number.isFinite(this.scheduleStart) ||
+      !Number.isFinite(this.scheduleEnd) ||
+      this.scheduleStart < 0 ||
+      this.scheduleEnd <= this.scheduleStart
+    ) {
+      this.notice.set("Recovery must be after fault activation");
+      return;
+    }
+    this.edit((p) => {
+      p.scenarios.push(
+        {
+          at: Number(this.scheduleStart),
+          equipmentId: id,
+          fault: this.scheduleFault as Project["scenarios"][number]["fault"],
+          active: true,
+        },
+        {
+          at: Number(this.scheduleEnd),
+          equipmentId: id,
+          fault: this.scheduleFault as Project["scenarios"][number]["fault"],
+          active: false,
+        },
+      );
+      p.scenarios.sort((a, b) => a.at - b.at);
+    });
+  }
+  removeScenario(index: number) {
+    this.edit((p) => {
+      p.scenarios.splice(index, 1);
+    });
+  }
+  equipmentTag(id: string) {
+    return this.project()?.equipment.find((e) => e.id === id)?.tag ?? id;
+  }
+  async ioCommand(id: string, tag: string, value: number | boolean) {
+    await this.attempt(async () => {
+      await this.api("command", { id, tag, value });
+      this.project.set(await this.api("project"));
+    });
+  }
+  selectIo(id: string) {
+    this.selected.set([id]);
+  }
+  formatIo(value: Value | undefined) {
+    return typeof value === "number"
+      ? value.toFixed(2)
+      : value === undefined
+        ? "—"
+        : String(value);
+  }
+  async copyNodeId(node: string) {
+    await this.attempt(async () => {
+      await navigator.clipboard.writeText(node);
+      this.notice.set("OPC UA NodeId copied");
+    });
+  }
+  isMaterialConnection(c: Connection) {
+    const e = this.project()?.equipment.find((e) => e.id === c.from);
+    return e
+      ? definitions[e.type].ports.find((p) => p.id === c.fromPort)?.domain ===
+          "material"
+      : false;
   }
   tags = () =>
     this.selectedEquipment()

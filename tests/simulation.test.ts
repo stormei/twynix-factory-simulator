@@ -155,7 +155,7 @@ describe("causal water process", () => {
     expect(() => s.submit("pump", "SpeedSetpoint", 101, "ui")).toThrow("range");
     expect(() => s.submit("tank", "Volume", 42, "ui")).toThrow("read-only");
   });
-  it("models conveyor movement, jam and production cycles", () => {
+  it("runs manufacturing drives without creating phantom products", () => {
     const p = structuredClone(demo);
     p.equipment = [
       equipment("belt", "conveyor", "CV-1", 0, 0, {}, { RunCommand: true }),
@@ -165,13 +165,11 @@ describe("causal water process", () => {
     p.controllers = [];
     const s = new Simulation(p);
     run(s, 200);
-    expect(Number(s.states["belt"].values["ProductCount"])).toBeGreaterThan(2);
-    expect(Number(s.states["m"].values["ProductCount"])).toBeGreaterThan(2);
+    expect(s.states["belt"].values["RunFeedback"]).toBe(true);
+    expect(s.states["belt"].values["ProductCount"]).toBe(0);
+    expect(s.states["m"].status).toBe("starved");
     s.fault("belt", "jam", true);
     run(s, 20);
-    const pos = s.states["belt"].values["ProductPosition"];
-    run(s, 20);
-    expect(s.states["belt"].values["ProductPosition"]).toBe(pos);
     expect(s.states["belt"].values["JamActive"]).toBe(true);
   });
   it("persists project definitions without physical runtime or sessions", () => {

@@ -14,7 +14,9 @@ import {
 import { validateProject, fluidPaths } from "@twynix/process-graph";
 import { command, evaluateControllers } from "@twynix/control-engine";
 import { applyScenarios } from "@twynix/scenario-engine";
+import { MaterialRuntime } from "./material";
 export class Simulation {
+  private material!: MaterialRuntime;
   readonly dt = 0.1;
   sourceTimestamp = new Date();
   project: Project;
@@ -63,6 +65,7 @@ export class Simulation {
     this.sourceTimestamp = new Date();
     this.project = structuredClone(this.baseline);
     this.states = {};
+    this.material = new MaterialRuntime(this.project);
     this.time = 0;
     this.seed = this.project.seed;
     this.history.clear();
@@ -132,7 +135,10 @@ export class Simulation {
   step(): void {
     const p = this.project;
     const c = { dt: this.dt, time: this.time, random: this.random };
-    applyScenarios(p, this.time, this.dt, (m) => this.event(m, "alarm"));
+    applyScenarios(p, this.time, this.dt, (m) => {
+      this.event(m, "alarm");
+      this.revision++;
+    });
     evaluateControllers(p, this.states);
     const prev = this.states;
     const next: Record<string, EquipmentState> = {};
@@ -188,6 +194,8 @@ export class Simulation {
       const v = s.values;
       const params = e.parameters;
       if ("FlowRate" in v) v["FlowRate"] = flowById.get(e.id) ?? 0;
+      if (e.type === "source" || e.type === "pipe")
+        s.status = Number(v["FlowRate"]) > 0 ? "flowing" : "idle";
       if (e.type === "tank") {
         v["Inflow"] = inFlow.get(e.id) ?? 0;
         v["Outflow"] = outFlow.get(e.id) ?? 0;
@@ -247,16 +255,14 @@ export class Simulation {
           v["Detection"] = Number(v["Measurement"]) > 0.5;
         s.status = s.quality === "Good" ? "normal" : "fault";
       }
-      if (e.type === "counter") {
-        const link = p.connections.find((l) => l.to === e.id);
-        v["ProductCount"] = link
-          ? Number(next[link.from]?.values["ProductCount"] ?? 0)
-          : 0;
-      }
     }
+    this.material.step(p, next, c);
     this.states = next;
     this.sourceTimestamp = new Date();
     this.time = Math.round((this.time + this.dt) * 10) / 10;
+  }
+  productionMetrics() {
+    return this.material.metrics(this.project, this.states, this.time);
   }
   snapshot(): Snapshot {
     return {
@@ -267,6 +273,7 @@ export class Simulation {
       states: structuredClone(this.states),
       events: [...this.events],
       opcua: { ...this.opcua },
+      production: this.productionMetrics(),
     };
   }
 }

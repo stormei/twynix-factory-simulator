@@ -49,6 +49,64 @@ export const definitions: Record<
     defaults: Record<string, number>;
   }
 > = {
+  "material-source": {
+    name: "Product feeder",
+    category: "Manufacturing",
+    ports: [material[1]],
+    tags: [
+      b("RunCommand", true),
+      b("RunFeedback"),
+      b("FaultActive"),
+      n("ProductCount", "pcs"),
+      n("QueueLength", "pcs"),
+      b("Blocked"),
+    ],
+    defaults: { interval: 2 },
+  },
+  buffer: {
+    name: "Accumulation buffer",
+    category: "Manufacturing",
+    ports: material,
+    tags: [
+      n("QueueLength", "pcs"),
+      n("Capacity", "pcs"),
+      n("ProductCount", "pcs"),
+      b("Blocked"),
+      b("FaultActive"),
+    ],
+    defaults: { capacity: 4 },
+  },
+  inspection: {
+    name: "Vision inspection",
+    category: "Manufacturing",
+    ports: material,
+    tags: [
+      ...drive,
+      n("ProductCount", "pcs"),
+      n("RejectCount", "pcs"),
+      n("CycleProgress", "%"),
+      n("QueueLength", "pcs"),
+      b("Starved"),
+      b("Blocked"),
+    ],
+    defaults: {
+      cycleTime: 2,
+      rejectRate: 0.05,
+      rampTime: 0.5,
+      ratedPower: 0.5,
+    },
+  },
+  sink: {
+    name: "Finished goods",
+    category: "Manufacturing",
+    ports: [material[0]],
+    tags: [
+      n("ProductCount", "pcs"),
+      n("RejectCount", "pcs"),
+      n("QueueLength", "pcs"),
+    ],
+    defaults: {},
+  },
   source: {
     name: "Water source",
     category: "Process",
@@ -133,6 +191,9 @@ export const definitions: Record<
       ...drive,
       n("ProductCount", "pcs"),
       n("ProductPosition", "m"),
+      n("QueueLength", "pcs"),
+      b("Starved"),
+      b("Blocked"),
       b("SensorActive"),
       b("JamActive"),
     ],
@@ -158,7 +219,14 @@ export const definitions: Record<
     name: "Production machine",
     category: "Manufacturing",
     ports: material,
-    tags: [...drive, n("ProductCount", "pcs"), n("CycleProgress", "%")],
+    tags: [
+      ...drive,
+      n("ProductCount", "pcs"),
+      n("CycleProgress", "%"),
+      n("QueueLength", "pcs"),
+      b("Starved"),
+      b("Blocked"),
+    ],
     defaults: { cycleTime: 5, rampTime: 1, ratedPower: 4 },
   },
   counter: {
@@ -187,6 +255,7 @@ export function initial(e: Equipment): EquipmentState {
   for (const t of definitions[e.type].tags)
     values[t.name] = t.type === "boolean" ? false : 0;
   Object.assign(values, e.commands);
+  if (e.type === "buffer") values["Capacity"] = e.parameters["capacity"];
   if (e.type === "tank") {
     values["Volume"] = e.parameters["initialVolume"];
     values["Level"] =
@@ -210,7 +279,7 @@ export function actuator(
   const p = e.parameters;
   const fault = e.faults.includes("trip") || e.faults.includes("overheat");
   v["FaultActive"] = fault;
-  if (["pump", "motor", "conveyor", "machine"].includes(e.type)) {
+  if (["pump", "motor", "conveyor", "machine", "inspection"].includes(e.type)) {
     const target =
       v["RunCommand"] &&
       !fault &&
@@ -235,24 +304,6 @@ export function actuator(
         20;
     v["OperatingHours"] =
       Number(v["OperatingHours"]) + (v["RunFeedback"] ? c.dt / 3600 : 0);
-    if (e.type === "conveyor") {
-      const pos =
-        Number(v["ProductPosition"]) +
-        (Number(v["ActualSpeed"]) / 100) * p["speed"] * c.dt;
-      v["ProductCount"] =
-        Number(v["ProductCount"]) + Math.floor(pos / p["length"]);
-      v["ProductPosition"] = pos % p["length"];
-      v["SensorActive"] = Number(v["ProductPosition"]) > p["length"] * 0.85;
-      v["JamActive"] = e.faults.includes("jam");
-    }
-    if (e.type === "machine") {
-      const progress =
-        Number(v["CycleProgress"]) +
-        (v["RunFeedback"] ? (c.dt / p["cycleTime"]) * 100 : 0);
-      v["ProductCount"] =
-        Number(v["ProductCount"]) + Math.floor(progress / 100);
-      v["CycleProgress"] = progress % 100;
-    }
     s.status = fault
       ? "fault"
       : e.faults.includes("jam")

@@ -114,7 +114,7 @@
       "tag": "LT-101",
       "label": "Level transmitter",
       "x": 820,
-      "y": 440,
+      "y": 480,
       "mode": "manual",
       "parameters": {
         "noise": 0.04,

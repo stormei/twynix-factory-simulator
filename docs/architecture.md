@@ -22,7 +22,25 @@ Tank mass balance uses liters and L/s, with available source volume and destinat
 
 Pump speed ramps over configured rampTime. RunFeedback is based on actual speed, not the command. Current/power are simplified speed-dependent approximations, not a motor/pump curve solver. Trips/overheating remove pump output immediately. Fail-to-start blocks acceleration. Valve motion, actuation delay, leakage and stuck faults affect flow. Sensor filtering, seeded noise, offset, drift, bounded delay (maximum 60 s), stuck and invalid quality affect measured values, not process volume.
 
-Conveyor positions, sensor activation and completed products, motor ramps, machine cycles/power and downstream counters are implemented as basic models. Manufacturing equipment does not yet perform full material handoff, starvation/blockage, electrical network solving, or coordinated production-line control. Pressure is a flow-related approximation. Counter values reflect an upstream machine/conveyor count. Photoelectric sensors reference upstream conveyor activation.
+Pressure is a flow-related approximation. Photoelectric sensors can observe a connected conveyor's detection value. Electrical network solving is not implemented.
+
+## Connected production model
+
+The Packaging Line example is a serial material network: feeder → conveyor → finite buffer → machine → inspection → finished goods. Each product has a stable runtime identity, creation time, travel/process progress and rejection flag. Product ownership lives exclusively in `MaterialRuntime`, independently of SVG rendering. The invariant is **generated = good output + rejected output + work in progress**. No disconnected machine creates products. Material connections remain one-to-one; merges/splits, batches, product recipes and routing policies are future work.
+
+The feeder emits a product at its configured interval while enabled and holds at most one waiting product. A conveyor has a capacity of max(1, floor(length in metres)), capped at 100 products, with one-metre pitch; speed and actual drive speed determine travel time. Spacing prevents packages overlapping behind a blocked head product. Buffer capacity is an integer from 1 to 100. Machines and inspection stations hold one product each; cycle progress depends on actual speed. Inspection applies a seeded Bernoulli reject rate at cycle completion. Rejected products continue to the final collector and are counted separately from good output. The final collector (or a terminal product counter) consumes products; unconnected outputs are blocked, not implicit drains.
+
+Transfers are staged from the completed step and use pre-transfer destination capacity. Each product traverses at most one connection per 100 ms step, including buffer handoff, and no recursive propagation occurs. A destination that becomes free this step is available on the next step. Blockage propagates through finite queues; lack of material starves downstream stations. Jams/trips freeze material processing immediately, even while a drive's commanded stop ramps down. Drive RunFeedback means physical drive motion; station status separately distinguishes productive running, starvation, blockage, stopped, jammed and faulted. Power has a simplified idle-load allowance at starved/blocked processing stations.
+
+Live metrics include good/rejected output, WIP, good-output throughput (pcs/hour over elapsed simulated time including startup), average completed-product lead time (includes queues and rejected completions), and mean busy utilization across machines/inspection stations. Station statistics count busy, starved, blocked, fault/jam and stopped seconds. Buffer waiting is not machine utilization. The fault-time total sums equipment fault seconds; overlapping faults are counted per equipment, not as unique line downtime. The “busiest workstation” indicator ranks processing-station utilization; it is a constraint clue, not a formal bottleneck proof or OEE calculation. Counts/queues and aggregate production metrics are readable through OPC UA.
+
+## Scenarios and experiments
+
+Scenario Lab authors activation/clear fault windows through the existing validated project schema. These are saved with the project and replayed after Reset. Editing a schedule follows the same pause-and-restore policy as other configuration edits. Imported schedules may also contain any supported fault.
+
+The comparison UI runs Baseline, Larger Buffer and Faster Machine variants against the same initial configuration, deterministic seed, duration and fault schedule. The engine uses isolated Simulation instances and yields every 100 process steps so the authoritative live runtime and OPC UA continue running. Durations are 10–1800 simulated seconds; at most four variants, one concurrent comparison request, and two million equipment-steps per report are allowed. Invalid overrides are rejected before running any variant. Report IDs/timestamps are metadata; result metrics replay deterministically.
+
+SQLite stores the complete starting project definition, seed, duration, overrides and result metrics for each report. The UI lists the ten newest reports for the active project, including unsaved project definitions with that same ID. Comparisons include startup effects and are single-seed experiments, not statistically validated estimates or automatic optimization. Changing buffer space need not improve a line limited by processing capacity. Experiments always start from initial conditions rather than cloning the live physical WIP.
 
 ## Control and faults
 
@@ -30,7 +48,7 @@ Manual commands originate in the app; external commands originate in OPC UA; aut
 
 ## Persistence and lifecycle
 
-SQLite uses WAL and stores versioned project JSON plus metadata. Runtime states, alarms/events, UI viewport/selection, and communication sessions are transient. Startup opens the most recently saved definition, stopped at initial conditions. Explicit Save includes current command/fault configuration. Reset restores the definition captured when the project was loaded/edited; saving does not redefine the current runtime's reset baseline until reload. `migrateProject` accepts schema v1 and rejects unknown versions; no older schema exists to migrate yet.
+SQLite uses WAL and stores versioned project JSON plus metadata. Runtime states, alarms/events, UI viewport/selection, and communication sessions are transient. Experiment reports are persisted separately. Startup opens the most recently saved definition, stopped at initial conditions. A fresh installation opens the Packaging Line; upgrades seed any missing built-in example without overwriting saved projects. Explicit Save includes current command/fault configuration. Reset restores the definition captured when the project was loaded/edited; saving does not redefine the current runtime's reset baseline until reload. `migrateProject` accepts schema v1 and rejects unknown versions; no older schema exists to migrate yet.
 
 ## Communication and security
 
@@ -42,9 +60,9 @@ The web API has optional bearer-token authentication on loopback, required when 
 
 ## Editor and remaining product backlog
 
-Implemented: library search, drag/drop, reusable symbols for all initial types, click/Shift-select/select all, move, delete, copy/paste/duplicate, undo/redo, horizontal alignment, grid snap, zoom/pan/fit preset, port connections with server validation/removal, properties/labels/parameters, mode/commands/faults, save/open/rename/duplicate/delete/import/export, live events/alarms and session count.
+Implemented: library search, drag/drop, reusable symbols for all initial types, click/Shift-select/select all, move, delete, copy/paste/duplicate, undo/redo, horizontal alignment, grid snap, zoom/pan/bounds-based fit, port connections with server validation/removal, properties/labels/parameters, mode/commands/faults, save/open/rename/duplicate/delete/import/export, live events/alarms and session count.
 
-Remaining: marquee selection, context menus, custom connection waypoints/obstacle routing, configurable grid/snap, true bounds-based zoom-to-fit (current Fit restores the demo viewport), per-category collapse, vertical/distributed alignment, rotation, persistent UI layout, graphical controller/scenario authoring, per-session diagnostics, full user/role management, collaborative edit conflict detection, material transfer/line balancing and more advanced hydraulic models. Controller and scenario definitions can currently be authored through validated imported JSON. The top process-area drawing annotation is currently fixed to the water-demo area.
+Remaining: marquee selection, context menus, custom connection waypoints/obstacle routing, configurable grid/snap, per-category collapse, vertical/distributed alignment, rotation, persistent UI layout, graphical controller authoring, multi-step scenario sequencing, per-session diagnostics, full user/role management, collaborative edit conflict detection, material branching/merging, production recipes, formal line balancing and more advanced hydraulic models. Controller definitions can currently be authored through validated imported JSON. Graphical fault-window schedules, saved experiment comparisons, a searchable I/O monitor and live station performance are implemented. SVG artwork uses shared gradients, consistent steel/enamel colors, visible backend-owned products, and explicit state chips; changing appearance never advances physics.
 
 ## Verification boundaries
 

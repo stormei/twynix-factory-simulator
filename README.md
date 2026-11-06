@@ -13,11 +13,20 @@ npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:3000**. Load the included **Water Treatment Process**, then press **Start**. The pump starts automatically below 30% tank level and stops above 80%. Backend process execution and OPC UA subscriptions continue when the browser closes. Stop the server with Ctrl+C.
+Open **http://127.0.0.1:3000**. Choose **Packaging line** from the equipment sidebar and press **Start**. Packages move through a feeder, conveyor, finite buffer, machine and vision inspection to finished goods. A fresh installation opens this example by default. The **Water treatment** example remains available; its pump starts automatically below 30% tank level and stops above 80%. Backend process execution and OPC UA subscriptions continue when the browser closes. Stop the server with Ctrl+C.
 
 For development, use `npm run dev` and open http://127.0.0.1:4200. The Angular development proxy forwards API and WebSocket requests to port 3000.
 
 For an isolated local test with unsecured OPC UA transport, explicitly set `OPCUA_DEV=true`. This permits anonymous **reads only**. Writes still require an authenticated operator with a password of at least 12 characters. The default profile uses Basic256Sha256 / SignAndEncrypt and rejects unknown client certificates.
+
+## Try the production line
+
+- Watch the shaded SVG equipment: packages are drawn from actual backend WIP, not a decorative animation. Every station shows its operating state; a full buffer blocks upstream equipment and a stopped feeder eventually starves downstream equipment.
+- The live strip shows good output, throughput, WIP, completed-product lead time, processing utilization and the busiest workstation. **Performance** shows each station's occupancy, starvation, blockage and fault duration.
+- Open **I/O signals** to search equipment/tags, filter commands versus measurements, inspect quality/control ownership, change manual commands/setpoints, and copy stable OPC UA NodeIds. Click a signal name to inspect its equipment. External and automatic ownership disable manual writes.
+- Pause and open **Experiments**. Add a fault window (for example, trip MC-101 at 20 s and clear at 50 s). Save the project to reuse that scenario. Reset and Start replay it.
+- Compare the baseline with a larger buffer and a faster machine. Runs use the same seed, starting configuration and schedule. Results retain the full definition and are stored in SQLite; the live simulation is unaffected. Open the report selector to revisit recent comparisons.
+- Change capacity/cycle-time parameters while paused to apply a configuration to the live project. A larger buffer alone may not improve throughput when the machine is the limiting station.
 
 ## Try the process
 
@@ -41,6 +50,11 @@ ns=2;s=project/water-treatment/equipment/pump/SpeedSetpoint
 ns=2;s=project/water-treatment/equipment/tank/Level
 ns=2;s=project/water-treatment/equipment/tank/Volume
 ns=2;s=project/water-treatment/simulation/SimulationTime
+ns=2;s=project/production-line/equipment/conveyor/RunCommand
+ns=2;s=project/production-line/equipment/buffer/QueueLength
+ns=2;s=project/production-line/equipment/finished/ProductCount
+ns=2;s=project/production-line/simulation/WorkInProgress
+ns=2;s=project/production-line/simulation/Throughput
 ```
 
 1. For secure connections, exchange/trust application certificates. Server PKI lives in `data/pki`. Verify a client's certificate fingerprint before moving its certificate from `rejected` to `trusted/certs`; reconnect afterward. Trust the server certificate in the client as well. Keep the PKI volume across restarts.
@@ -60,7 +74,7 @@ npx playwright install chromium  # one-time installation
 npm run test:e2e
 ```
 
-Tests exercise deterministic process behavior, boundaries, hysteresis, fault effects, storage and input validation. Independent OPC UA clients exercise browsing, subscriptions, permissions, invalid writes, stable IDs, and encrypted authenticated connections. Browser tests exercise process commands, pause/reset, editing, saving/reloading, and execution after browser closure.
+Tests exercise deterministic process behavior, boundaries, hysteresis, fault effects, storage and input validation. Independent OPC UA clients exercise browsing, subscriptions, permissions, invalid writes, stable IDs, and encrypted authenticated connections. Browser tests exercise process commands, pause/reset, editing, saving/reloading, and execution after browser closure. Production checks cover product conservation, bounded queues, blockage/starvation, seeded rejection, scheduled downtime, and reproducible isolated experiments. Browser checks also cover I/O command editing, scenario authoring and saved comparison reloads.
 
 ## Deployment
 

@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "production-line",
+  "name": "Precision Packaging Line",
+  "seed": 2026,
+  "equipment": [
+    {
+      "id": "feeder",
+      "type": "material-source",
+      "tag": "FD-101",
+      "label": "Product feeder",
+      "x": 40,
+      "y": 230,
+      "mode": "manual",
+      "parameters": {
+        "interval": 1.8
+      },
+      "commands": {
+        "RunCommand": true
+      },
+      "faults": []
+    },
+    {
+      "id": "conveyor",
+      "type": "conveyor",
+      "tag": "CV-101",
+      "label": "Belt conveyor",
+      "x": 240,
+      "y": 230,
+      "mode": "manual",
+      "parameters": {
+        "speed": 1.2,
+        "length": 3,
+        "rampTime": 1,
+        "ratedPower": 1.5
+      },
+      "commands": {
+        "RunCommand": true,
+        "SpeedSetpoint": 100
+      },
+      "faults": []
+    },
+    {
+      "id": "buffer",
+      "type": "buffer",
+      "tag": "BF-101",
+      "label": "Accumulation buffer",
+      "x": 440,
+      "y": 230,
+      "mode": "manual",
+      "parameters": {
+        "capacity": 4
+      },
+      "commands": {},
+      "faults": []
+    },
+    {
+      "id": "machine",
+      "type": "machine",
+      "tag": "MC-101",
+      "label": "Production machine",
+      "x": 640,
+      "y": 230,
+      "mode": "manual",
+      "parameters": {
+        "cycleTime": 3.2,
+        "rampTime": 1,
+        "ratedPower": 4
+      },
+      "commands": {
+        "RunCommand": true,
+        "SpeedSetpoint": 100
+      },
+      "faults": []
+    },
+    {
+      "id": "inspection",
+      "type": "inspection",
+      "tag": "VI-101",
+      "label": "Vision inspection",
+      "x": 840,
+      "y": 230,
+      "mode": "manual",
+      "parameters": {
+        "cycleTime": 1.8,
+        "rejectRate": 0.04,
+        "rampTime": 0.5,
+        "ratedPower": 0.5
+      },
+      "commands": {
+        "RunCommand": true,
+        "SpeedSetpoint": 100
+      },
+      "faults": []
+    },
+    {
+      "id": "finished",
+      "type": "sink",
+      "tag": "FG-101",
+      "label": "Finished goods",
+      "x": 1040,
+      "y": 230,
+      "mode": "manual",
+      "parameters": {},
+      "commands": {},
+      "faults": []
+    }
+  ],
+  "connections": [
+    {
+      "id": "material-0",
+      "from": "feeder",
+      "fromPort": "out",
+      "to": "conveyor",
+      "toPort": "in"
+    },
+    {
+      "id": "material-1",
+      "from": "conveyor",
+      "fromPort": "out",
+      "to": "buffer",
+      "toPort": "in"
+    },
+    {
+      "id": "material-2",
+      "from": "buffer",
+      "fromPort": "out",
+      "to": "machine",
+      "toPort": "in"
+    },
+    {
+      "id": "material-3",
+      "from": "machine",
+      "fromPort": "out",
+      "to": "inspection",
+      "toPort": "in"
+    },
+    {
+      "id": "material-4",
+      "from": "inspection",
+      "fromPort": "out",
+      "to": "finished",
+      "toPort": "in"
+    }
+  ],
+  "controllers": [],
+  "scenarios": []
+}
