@@ -12,7 +12,7 @@ import { EquipmentGlyph } from "./glyph";
       y="-47"
       width="156"
       height="224"
-      rx="14"
+      rx="3"
       class="selection-frame"
       [class.is-selected]="selected()"
     />
@@ -25,11 +25,11 @@ import { EquipmentGlyph } from "./glyph";
       fill="transparent"
     />
     <svg:rect
-      x="24"
+      x="16"
       y="-33"
-      width="72"
+      width="88"
       height="21"
-      rx="5"
+      rx="1"
       class="equipment-tag-bg"
     />
     <svg:text x="60" y="-19" text-anchor="middle" class="tag">
@@ -44,7 +44,7 @@ import { EquipmentGlyph } from "./glyph";
       y="153"
       width="90"
       height="19"
-      rx="9.5"
+      rx="1"
       [attr.class]="'state-chip ' + status()"
     />
     <svg:circle
@@ -67,7 +67,7 @@ import { EquipmentGlyph } from "./glyph";
           port.id === 'level' ? 60 : port.direction === 'input' ? 0 : 120
         "
         [attr.cy]="port.id === 'level' ? 120 : 60"
-        r="5"
+        r="3.5"
         class="port"
         (pointerdown)="$event.stopPropagation()"
         (click)="$event.stopPropagation(); portClick.emit(port.id)"

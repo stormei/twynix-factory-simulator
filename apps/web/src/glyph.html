@@ -1,500 +1,309 @@
-<svg:ellipse cx="62" cy="119" rx="57" ry="7" fill="#617b8b" opacity=".1" />
-<svg:g class="glyph-art" filter="url(#equipment-shadow)">
+<svg:g class="glyph-art">
   @switch(type()) { @case('conveyor') {
-  <svg:path
-    d="M19 76V110L26 113V80 M95 72V106L102 109V74"
-    fill="#6d8292"
-    stroke="#526879"
-  />
-  <svg:path d="M7 48L20 38H115L104 49Z" fill="#637b8c" />
-  <svg:rect
-    x="3"
-    y="47"
-    width="111"
-    height="36"
-    rx="15"
-    fill="url(#metal-front)"
-    stroke="#8b9ead"
-  />
-  <svg:rect
-    x="10"
-    y="52"
-    width="98"
-    height="23"
-    rx="10"
-    fill="url(#belt-surface)"
-  />
-  @for(x of [20,36,52,68,84,100];track x){
-  <svg:path
-    [attr.d]="'M'+x+' 54L'+(x-6)+' 73'"
-    stroke="#566b7b"
-    stroke-width="2"
-  />
+  <svg:path d="M18 73V113H12 M102 73V113H108 M18 94H102" class="frame-member" />
+  <svg:rect x="3" y="48" width="114" height="26" rx="2" class="steel-panel" />
+  <svg:rect x="10" y="52" width="100" height="18" rx="7" class="belt-panel" />
+  @for(x of [20,34,48,62,76,90,104];track x){
+  <svg:path [attr.d]="'M'+x+' 54V68'" class="belt-seam" />
   }
-  <svg:path
-    d="M12 44H112 M13 80H105"
-    stroke="#e1ad52"
-    stroke-width="3"
-    stroke-linecap="round"
-  />
-  <svg:circle cx="20" cy="64" r="6" fill="#99adb9" />
-  <svg:circle cx="98" cy="64" r="6" fill="#99adb9" />
-  <svg:path d="M18 61L22 67 M96 61L100 67" stroke="#5b7285" />
+  <svg:circle cx="19" cy="61" r="5" class="roller" />
+  <svg:circle cx="101" cy="61" r="5" class="roller" />
+  <svg:path d="M19 58V64 M16 61H22 M101 58V64 M98 61H104" class="fine-line" />
+  <svg:path d="M8 44H112 M8 78H112" class="guard-rail" />
+  <svg:path d="M13 44V48 M107 44V48 M13 74V78 M107 74V78" class="outline" />
+  <svg:rect x="83" y="81" width="24" height="13" rx="1" class="drive-housing" />
+  <svg:path d="M87 84V91 M91 84V91 M95 84V91 M99 84V91" class="drive-fin" />
+  <svg:path d="M94 74V81" class="outline" />
   @for(p of products();track p.id){
   <svg:use
     href="#parcel"
     [attr.x]="8+p.progress*78"
-    y="22"
+    y="24"
     width="28"
     height="28"
     [class.rejected-product]="p.rejected"
   />
-  }
+  } } @case('machine') {
+  <svg:path d="M19 107V116H31 M93 107V116H105" class="frame-member" />
+  <svg:rect x="14" y="16" width="98" height="91" rx="1" class="cabinet-panel" />
+  <svg:rect x="20" y="23" width="62" height="77" rx=".5" class="door-panel" />
   <svg:rect
-    x="89"
-    y="82"
-    width="18"
-    height="14"
-    rx="3"
-    fill="url(#teal-panel)"
+    x="26"
+    y="30"
+    width="49"
+    height="42"
+    rx=".5"
+    class="machine-window"
   />
-  } @case('machine') {
-  <svg:path d="M22 104V115H34V104 M87 102V113H99V102" fill="#4a657d" />
-  <svg:path d="M20 20L32 11H112L101 21Z" fill="#85a8cb" />
-  <svg:path d="M101 21L112 11V94L101 105Z" fill="#24476a" />
-  <svg:rect
-    x="16"
-    y="20"
-    width="85"
-    height="84"
-    rx="4"
-    fill="url(#blue-panel)"
-    stroke="#264e78"
-  />
-  <svg:rect
-    x="27"
-    y="31"
-    width="53"
-    height="43"
-    rx="3"
-    fill="#203747"
-    stroke="#9db8cf"
-    stroke-width="2"
-  />
-  <svg:path d="M31 35H57L31 61Z" fill="#c9e5f1" opacity=".15" />
   <svg:path
-    d="M37 67V58H70V67 M53 36V49"
-    stroke="#a6bbc8"
-    stroke-width="5"
-    fill="none"
+    d="M31 62H70 M37 33V48 M65 33V48 M34 46H68 M51 46V52"
+    class="machine-axis"
   />
-  <svg:rect x="47" y="48" width="15" height="10" rx="2" fill="#5eb3ae" />
-  @if(products().length){
-  <svg:use href="#parcel" x="48" y="53" width="21" height="21" />
+  <svg:rect x="44" y="51" width="15" height="7" class="tool-head" />
+  @for(p of products();track p.id){
+  <svg:use
+    href="#parcel"
+    x="39"
+    y="47"
+    width="24"
+    height="24"
+    [class.rejected-product]="p.rejected"
+  />
   }
-  <svg:rect x="85" y="33" width="11" height="16" rx="2" fill="#192d3d" />
-  <svg:rect x="87" y="35" width="7" height="7" rx="1" fill="#6addc4" />
-  <svg:circle cx="89" cy="57" r="2.5" fill="#e9b255" />
-  <svg:path
-    d="M29 84H80 M29 90H67 M29 96H80"
-    stroke="#82a3c4"
-    stroke-width="2"
-  />
-  <svg:rect x="85" y="78" width="9" height="19" rx="2" fill="#244668" />
-  <svg:path d="M94 19V4" stroke="#4d6679" stroke-width="3" />
+  <svg:path d="M76 78V90" class="door-handle" />
+  <svg:path d="M26 80H63 M26 85H63 M26 90H63" class="vent-line" />
+  <svg:path d="M87 17V106" class="fine-line" />
+  <svg:rect x="92" y="27" width="14" height="14" rx=".5" class="hmi-bezel" />
+  <svg:rect x="94" y="29" width="10" height="8" class="hmi-screen" />
+  <svg:path d="M95 35H97V32H100V34H103" class="hmi-trace" />
+  <svg:circle cx="96" cy="49" r="2" class="start-pilot" />
+  <svg:circle cx="103" cy="49" r="2" class="stop-pilot" />
+  <svg:circle cx="99" cy="61" r="3" class="emergency-stop" />
+  <svg:rect x="93" y="83" width="12" height="9" class="nameplate" />
+  <svg:path d="M95 86H103 M95 89H101" class="fine-line" />
+  @for(x of [18,108];track x){
+  <svg:path [attr.d]="'M'+x+' 20h1 M'+x+' 103h1'" class="fastener" />
+  }
+  <svg:path d="M100 16V10" class="outline" />
   <svg:rect
-    x="90"
-    y="0"
-    width="8"
+    x="97"
+    y="2"
+    width="6"
     height="8"
-    rx="2"
-    [attr.fill]="state()?.status==='fault'?'#df6c59':'#4ab99c'"
+    rx=".5"
+    class="stack-light"
+    [class.energized]="state()?.status==='running'"
+    [class.tripped]="state()?.status==='fault'||state()?.status==='jammed'"
   />
-  <svg:path d="M0 66H16 M102 66H120" stroke="#7e96a6" stroke-width="6" />
+  <svg:path d="M0 60H14 M112 60H120" class="transfer-rail" />
   } @case('inspection') {
-  <svg:path d="M17 75V111H25V75 M95 75V111H103V75" fill="#718c9d" />
-  <svg:path d="M4 61L15 51H117L106 61Z" fill="#627e8e" />
+  <svg:path d="M16 74V113H10 M104 74V113H110 M16 94H104" class="frame-member" />
+  <svg:rect x="4" y="55" width="112" height="18" rx="1" class="steel-panel" />
+  <svg:rect x="9" y="59" width="102" height="10" rx="4" class="belt-panel" />
+  <svg:path d="M25 54V12H91V54 M30 54V18H86V54" class="gantry-frame" />
+  <svg:path d="M25 35H30 M86 35H91" class="fine-line" />
   <svg:rect
-    x="3"
-    y="61"
-    width="108"
-    height="19"
-    rx="8"
-    fill="url(#belt-surface)"
-    stroke="#8da6b5"
+    x="47"
+    y="21"
+    width="25"
+    height="12"
+    rx=".5"
+    class="drive-housing"
   />
+  <svg:rect x="54" y="32" width="11" height="5" class="camera-lens" />
   <svg:path
-    d="M27 62V14H91V62"
-    stroke="#9cafba"
-    stroke-width="10"
-    fill="none"
-    stroke-linejoin="round"
-  />
-  <svg:path d="M32 60V19H87V60" stroke="#e3eef3" stroke-width="3" fill="none" />
-  <svg:rect
-    x="44"
-    y="18"
-    width="29"
-    height="17"
-    rx="4"
-    fill="url(#teal-panel)"
-    stroke="#1a807d"
-  />
-  <svg:circle cx="59" cy="29" r="5" fill="#263d4c" />
-  <svg:circle cx="59" cy="29" r="2.5" fill="#8de1e2" />
-  <svg:path d="M59 34L39 62H79Z" fill="#49ccb8" opacity=".16" />
-  <svg:path
-    d="M40 62H78"
-    stroke="#38bba4"
-    stroke-width="2"
-    stroke-dasharray="3 2"
+    d="M59.5 37V57 M43 57H76"
+    class="scan-line"
+    [attr.opacity]="products().length ? 0.8 : 0.25"
   />
   @for(p of products();track p.id){
   <svg:use
     href="#parcel"
     x="44"
-    y="40"
+    y="34"
     width="30"
     height="30"
     [class.rejected-product]="p.rejected"
   />
   }
   <svg:rect
-    x="94"
-    y="22"
-    width="20"
-    height="27"
-    rx="3"
-    fill="url(#metal-front)"
-    stroke="#9db2bd"
+    x="96"
+    y="20"
+    width="17"
+    height="26"
+    rx=".5"
+    class="cabinet-panel"
   />
-  <svg:rect x="98" y="26" width="12" height="12" rx="1" fill="#215765" />
-  <svg:path
-    d="M100 32L103 35L108 29"
-    fill="none"
-    stroke="#7ce0ba"
-    stroke-width="1.5"
-  />
+  <svg:rect x="99" y="24" width="11" height="9" class="hmi-screen" />
+  <svg:path d="M101 27H108 M101 30H105" class="hmi-trace" />
+  <svg:circle cx="102" cy="39" r="1.5" class="start-pilot" />
+  <svg:path d="M97 46V55" class="fine-line" />
   } @case('buffer') {
-  <svg:path d="M8 19L18 12H114L105 20Z" fill="#a4bac8" />
-  <svg:path d="M105 20L114 12V110L105 118Z" fill="#6e8799" />
-  <svg:rect
-    x="8"
-    y="19"
-    width="97"
-    height="96"
-    rx="3"
-    fill="#dee8ee"
-    stroke="#94aab9"
-  />
-  <svg:rect x="17" y="28" width="79" height="75" rx="2" fill="#b7cbd6" />
-  @for(y of [53,78,103];track y){
-  <svg:path [attr.d]="'M14 '+y+'H99'" stroke="#6f899b" stroke-width="4" />
+  <svg:rect x="17" y="21" width="86" height="85" class="rack-back" />
+  <svg:path d="M20 25L100 102 M100 25L20 102" class="rack-brace" />
+  <svg:path d="M12 17H108 M12 18V116H5 M108 18V116H115" class="rack-frame" />
+  @for(y of [43,73,103];track y){
+  <svg:rect x="15" [attr.y]="y" width="90" height="3" class="shelf" />
   } @for(slot of slots();track slot){
   <svg:use
     href="#parcel"
-    [attr.x]="19+(slot%3)*24"
-    [attr.y]="79-Math.floor(slot/3)*25"
+    [attr.x]="22+(slot%3)*25"
+    [attr.y]="80-Math.floor(slot/3)*30"
     width="25"
     height="25"
   />
   }
-  <svg:path d="M13 115V120 M99 115V120" stroke="#667e8e" stroke-width="6" />
-  <svg:rect x="30" y="5" width="55" height="15" rx="3" fill="#456d8c" />
-  <svg:text
-    x="57"
-    y="16"
-    text-anchor="middle"
-    fill="white"
-    font-size="8"
-    font-family="sans-serif"
-  >
-    BUFFER
+  <svg:rect x="33" y="3" width="54" height="12" class="nameplate" />
+  <svg:text x="60" y="11.5" text-anchor="middle" class="equipment-engraving">
+    ACCUMULATION
   </svg:text>
-  } @case('material-source') {
-  <svg:path d="M20 66V111L28 115V69 M93 67V111L101 115V67" fill="#708797" />
-  <svg:path d="M13 36L30 24H107L95 36Z" fill="#bfd0dc" />
+  @for(y of [26,51,81,109];track y){
+  <svg:path [attr.d]="'M11 '+y+'H13 M107 '+y+'H109'" class="fastener" />
+  } } @case('material-source') {
+  <svg:path d="M24 75V115H17 M96 75V115H103 M24 99H96" class="frame-member" />
+  <svg:rect x="17" y="26" width="86" height="6" class="steel-panel" />
+  <svg:path d="M19 32H101L81 78H39Z" class="cabinet-panel" />
+  <svg:path d="M26 36H94 M38 70H82 M60 36V68" class="panel-seam" />
+  <svg:path d="M39 78H81V88H39Z" class="steel-panel" />
+  <svg:rect x="34" y="89" width="23" height="16" rx="1" class="drive-housing" />
+  <svg:path d="M38 92V102 M42 92V102 M46 92V102 M50 92V102" class="drive-fin" />
+  <svg:path d="M57 97H79V88" class="outline" />
+  <svg:path d="M89 59H120 M87 64H120" class="transfer-rail" />
+  <svg:use href="#parcel" x="34" y="6" width="25" height="25" />
+  <svg:use href="#parcel" x="61" y="6" width="25" height="25" />
+  @for(x of [24,96];track x){
+  <svg:path [attr.d]="'M'+x+' 29h1'" class="fastener" />
+  } } @case('sink') {
+  <svg:rect x="7" y="94" width="106" height="7" class="pallet-deck" />
   <svg:path
-    d="M13 36H95V71L76 89H34L13 71Z"
-    fill="url(#metal-front)"
-    stroke="#8ca3b4"
+    d="M14 102V111H25V102 M54 102V111H65V102 M95 102V111H106V102"
+    class="pallet-base"
   />
-  <svg:path d="M95 36L107 24V64L95 77Z" fill="#8ea9ba" />
-  <svg:path d="M28 37H85L76 57H40Z" fill="#314c61" />
-  <svg:use href="#parcel" x="38" y="14" width="31" height="31" />
-  <svg:use href="#parcel" x="63" y="19" width="27" height="27" />
-  <svg:rect
-    x="36"
-    y="87"
-    width="54"
-    height="16"
-    rx="4"
-    fill="url(#teal-panel)"
-  />
-  <svg:path d="M91 61H120" stroke="#678d9c" stroke-width="5" />
-  <svg:path
-    d="M64 66V78 M59 73L64 78L69 73"
-    stroke="#5d8499"
-    fill="none"
-    stroke-width="2"
-  />
-  } @case('sink') {
-  <svg:path d="M8 91L24 82H112L101 93Z" fill="#c6a477" />
-  <svg:path d="M8 93H102V103H8Z" fill="#a77a48" />
-  <svg:path d="M102 93L113 84V96L102 103Z" fill="#89623e" />
-  <svg:path
-    d="M17 103V111H29V103 M51 103V111H63V103 M87 103V111H99V103"
-    fill="#8b643d"
-  />
+  <svg:path d="M7 113H113" class="floor-line" />
   @for(slot of pallets();track slot){
   <svg:use
     href="#parcel"
-    [attr.x]="16+(slot%3)*26"
-    [attr.y]="62-Math.floor(slot/3)*25"
-    width="34"
-    height="34"
+    [attr.x]="17+(slot%3)*27"
+    [attr.y]="67-Math.floor(slot/3)*24"
+    width="30"
+    height="30"
   />
   }
-  <svg:path d="M103 19H117V34" fill="none" stroke="#4b9d8c" stroke-width="2" />
-  <svg:circle cx="105" cy="26" r="12" fill="#e4f4eb" stroke="#96c6b3" />
-  <svg:path
-    d="M99 26L103 30L111 21"
-    stroke="#329679"
-    stroke-width="2.5"
-    fill="none"
-  />
+  <svg:rect x="93" y="78" width="17" height="12" class="nameplate" />
+  <svg:text x="101.5" y="86" text-anchor="middle" class="equipment-engraving">
+    OUT
+  </svg:text>
   } @case('tank') {
-  <svg:path d="M28 103V118H37V106 M83 106V118H92V103" fill="#6e8b9b" />
-  <svg:path
-    d="M20 25Q60 6 100 25V101Q60 121 20 101Z"
-    fill="url(#glass-panel)"
-    stroke="#89aebf"
-    stroke-width="1.5"
-  />
+  <svg:path d="M27 105V117H35 M85 105V117H93" class="frame-member" />
+  <svg:path d="M20 25Q60 9 100 25V101Q60 117 20 101Z" class="vessel-body" />
   <svg:rect
     x="24"
     [attr.y]="108-(preview()?58:value('Level'))*.78"
     width="72"
     height="100"
-    fill="url(#water-fill)"
+    class="process-liquid"
     clip-path="url(#tank-interior)"
   />
-  <svg:ellipse
-    cx="60"
-    [attr.cy]="108-(preview()?58:value('Level'))*.78"
-    rx="36"
-    ry="7"
-    fill="#97e5e3"
-    clip-path="url(#tank-interior)"
-  />
-  <svg:ellipse
-    cx="60"
-    cy="25"
-    rx="40"
-    ry="13"
-    fill="#e8f2f6"
-    stroke="#89aebf"
-  />
-  <svg:ellipse cx="60" cy="24" rx="13" ry="4" fill="#b4cfdb" stroke="#8facbf" />
   <svg:path
-    d="M31 40V94"
-    stroke="white"
-    stroke-opacity=".5"
-    stroke-width="6"
-    stroke-linecap="round"
+    [attr.d]="'M24 '+(108-(preview()?58:value('Level'))*.78)+'H96'"
+    class="liquid-surface"
+    clip-path="url(#tank-interior)"
   />
-  <svg:rect
-    x="103"
-    y="40"
-    width="7"
-    height="52"
-    rx="2"
-    fill="#e4eff4"
-    stroke="#97b0bd"
-  />
-  @for(y of [46,55,64,73,82];track y){
-  <svg:path [attr.d]="'M104 '+y+'H110'" stroke="#7295a6" />
+  <svg:ellipse cx="60" cy="25" rx="40" ry="8" class="vessel-cap" />
+  <svg:rect x="48" y="13" width="24" height="7" class="steel-panel" />
+  <svg:ellipse cx="60" cy="13" rx="12" ry="3" class="vessel-cap" />
+  <svg:path d="M25 100Q60 113 95 100 M32 35V95" class="panel-seam" />
+  <svg:rect x="104" y="39" width="5" height="52" class="nameplate" />
+  @for(y of [44,53,62,71,80,89];track y){
+  <svg:path [attr.d]="'M105 '+y+'H111'" class="fine-line" />
   }
-  <svg:path d="M0 60H20 M100 60H120" stroke="#84a4b4" stroke-width="7" />
+  <svg:path d="M0 57H20V63H0 M100 57H120V63H100" class="process-nozzle" />
   } @case('pump') {
-  <svg:rect x="17" y="101" width="91" height="10" rx="3" fill="#6b8999" />
-  <svg:rect
-    x="63"
-    y="44"
-    width="41"
-    height="48"
-    rx="8"
-    fill="url(#blue-panel)"
-    stroke="#3f6587"
-  />
-  @for(x of [72,79,86,93];track x){
-  <svg:path [attr.d]="'M'+x+' 48V88'" stroke="#8aaac6" stroke-width="2" />
+  <svg:rect x="14" y="104" width="96" height="6" class="base-plate" />
+  <svg:path d="M29 93V104 M83 89V104" class="frame-member" />
+  <svg:rect x="66" y="45" width="42" height="45" rx="2" class="drive-housing" />
+  @for(x of [72,79,86,93,100];track x){
+  <svg:path [attr.d]="'M'+x+' 49V86'" class="drive-fin" />
   }
-  <svg:circle
-    cx="43"
-    cy="68"
-    r="30"
-    fill="url(#teal-panel)"
-    stroke="#137b79"
-    stroke-width="1.5"
-  />
-  <svg:circle cx="43" cy="68" r="20" fill="#2e9993" stroke="#7ed0c4" />
+  <svg:rect x="79" y="36" width="16" height="9" class="steel-panel" />
+  <svg:circle cx="42" cy="67" r="28" class="pump-casing" />
+  <svg:circle cx="42" cy="67" r="19" class="impeller-housing" />
+  <svg:path d="M42 49V85 M27 58L57 76 M27 76L57 58" class="impeller-line" />
+  <svg:circle cx="42" cy="67" r="4" class="roller" />
   <svg:path
-    d="M42 48Q58 54 47 66Q65 71 53 83Q43 91 40 74Q24 88 24 73Q25 59 39 64Q28 46 42 48Z"
-    fill="#a5e0d4"
-    opacity=".85"
-    [attr.transform]="'rotate('+value('ActualSpeed')*2+' 43 68)'"
+    d="M0 57H15V63H0 M38 39V24H63V30H44V39 M108 57H120V63H108"
+    class="process-nozzle"
   />
-  <svg:circle cx="43" cy="68" r="5" fill="#e0f2ed" />
+  @for(x of [24,101];track x){
+  <svg:path [attr.d]="'M'+x+' 106v2'" class="fastener" />
+  } } @case('valve') {
+  <svg:path d="M0 56H28V64H0 M92 56H120V64H92" class="process-nozzle" />
+  <svg:path d="M28 44L92 76V44L28 76Z" class="valve-body" />
+  <svg:rect x="24" y="42" width="5" height="36" class="flange" />
+  <svg:rect x="91" y="42" width="5" height="36" class="flange" />
+  <svg:path d="M60 43V31" class="valve-stem" />
+  <svg:rect x="42" y="12" width="36" height="20" rx="1" class="drive-housing" />
+  <svg:rect x="48" y="17" width="24" height="5" class="nameplate" />
   <svg:path
-    d="M0 60H16 M43 38V24H65"
-    fill="none"
-    stroke="#77a9b7"
-    stroke-width="10"
+    d="M60 48V72"
+    class="valve-disc"
+    [attr.transform]="'rotate('+value('Position')*.9+' 60 60)'"
   />
-  <svg:path d="M103 60H120" stroke="#84a4b4" stroke-width="7" />
-  <svg:path d="M30 98V105 M88 93V104" stroke="#466a7a" stroke-width="6" />
-  <svg:rect x="76" y="34" width="17" height="12" rx="2" fill="#41678c" />
-  } @case('valve') {
-  <svg:path d="M0 60H26 M94 60H120" stroke="#92afbd" stroke-width="9" />
-  <svg:path
-    d="M26 43L94 77V43L26 77Z"
-    fill="url(#metal-front)"
-    stroke="#7f9aa9"
-    stroke-width="1.5"
-  />
-  <svg:circle cx="60" cy="60" r="13" fill="url(#teal-panel)" stroke="#2e8684" />
-  <svg:path d="M60 47V28" stroke="#688897" stroke-width="6" />
-  <svg:rect
-    x="42"
-    y="10"
-    width="36"
-    height="23"
-    rx="5"
-    fill="url(#blue-panel)"
-    stroke="#426b91"
-  />
-  <svg:rect
-    x="51"
-    y="14"
-    width="18"
-    height="6"
-    rx="2"
-    [attr.fill]="value('Position')>1?'#76d9b4':'#d1b072'"
-  />
-  <svg:path d="M30 44V76 M90 44V76" stroke="#aac0ca" stroke-width="5" />
+  <svg:circle cx="60" cy="60" r="3" class="roller" />
+  <svg:path d="M47 27H73" class="drive-fin" />
   } @case('motor') {
-  <svg:path d="M22 93V105H98V93" fill="#6b8597" />
-  <svg:rect
-    x="20"
-    y="34"
-    width="76"
-    height="62"
-    rx="12"
-    fill="url(#blue-panel)"
-    stroke="#3d6488"
-  />
-  @for(x of [31,42,53,64,75];track x){
-  <svg:path [attr.d]="'M'+x+' 40V90'" stroke="#91aec9" stroke-width="3" />
+  <svg:rect x="18" y="99" width="87" height="5" class="base-plate" />
+  <svg:path d="M31 89V99 M84 89V99" class="frame-member" />
+  <svg:rect x="20" y="35" width="76" height="55" rx="3" class="drive-housing" />
+  @for(x of [28,38,48,58,68,78,88];track x){
+  <svg:path [attr.d]="'M'+x+' 40V85'" class="drive-fin" />
   }
-  <svg:ellipse
-    cx="94"
-    cy="65"
-    rx="13"
-    ry="29"
-    fill="#6688a5"
-    stroke="#3d6488"
-  />
-  <svg:ellipse cx="96" cy="65" rx="7" ry="19" fill="#395d79" />
-  <svg:path d="M100 65H120" stroke="#a6b9c5" stroke-width="8" />
-  <svg:rect x="43" y="23" width="26" height="13" rx="3" fill="#436f96" />
+  <svg:rect x="43" y="24" width="27" height="11" rx="1" class="steel-panel" />
+  <svg:rect x="95" y="33" width="8" height="59" class="flange" />
+  <svg:path d="M103 58H120V66H103" class="shaft" />
+  <svg:path d="M98 39H100 M98 85H100" class="fastener" />
   } @case('source') {
-  <svg:path d="M22 83V110H32V83 M88 83V110H98V83" fill="#7694a5" />
-  <svg:rect
-    x="16"
-    y="23"
-    width="88"
-    height="71"
-    rx="11"
-    fill="url(#blue-panel)"
-    stroke="#3a678b"
-  />
-  <svg:rect x="26" y="34" width="67" height="40" rx="5" fill="#d2edf4" />
-  <svg:path d="M27 56Q35 48 45 56T65 56T85 56H92V72H27Z" fill="#65bec8" />
-  <svg:path d="M104 60H120" stroke="#85a9b8" stroke-width="7" />
-  <svg:circle cx="35" cy="84" r="3" fill="#8de0bd" />
-  } @case('pipe') {
-  <svg:rect
-    x="0"
-    y="49"
-    width="120"
-    height="22"
-    rx="3"
-    fill="url(#metal-front)"
-    stroke="#8ca8b9"
-  />
-  <svg:path d="M20 45V75 M95 45V75" stroke="#9cb5c2" stroke-width="8" />
-  <svg:path d="M2 54H118" stroke="#eef7fc" stroke-width="2" />
-  } @case('counter') {
-  <svg:path d="M40 87V114H83V87" fill="#8aa5b6" />
-  <svg:rect
-    x="13"
-    y="26"
-    width="96"
-    height="65"
-    rx="7"
-    fill="url(#blue-panel)"
-    stroke="#3d6488"
-  />
-  <svg:rect x="22" y="36" width="77" height="37" rx="3" fill="#193d4d" />
-  <svg:text
-    x="60"
-    y="61"
-    text-anchor="middle"
-    fill="#8be4d2"
-    font-size="20"
-    font-family="monospace"
-  >
-    {{preview()?'024':value('ProductCount')}}
-  </svg:text>
-  <svg:circle cx="91" cy="82" r="3" fill="#6fdbc3" />
-  } @default {
-  <svg:path d="M60 77V105H79" stroke="#839ead" stroke-width="6" />
-  <svg:path d="M0 60H28 M92 60H120" stroke="#a1b9c6" stroke-width="7" />
-  <svg:circle
-    cx="60"
-    cy="55"
-    r="31"
-    fill="url(#metal-front)"
-    stroke="#8fa8b8"
-    stroke-width="1.5"
-  />
-  <svg:circle cx="60" cy="55" r="25" fill="#f2f8fb" stroke="#bfd0da" />
-  @for(angle of [-70,-35,0,35,70];track angle){
+  <svg:path d="M25 98V115H34 M86 98V115H95" class="frame-member" />
+  <svg:rect x="16" y="20" width="88" height="78" rx="1" class="cabinet-panel" />
+  <svg:rect x="26" y="32" width="57" height="41" class="vessel-cap" />
+  <svg:rect x="27" y="52" width="55" height="20" class="process-liquid" />
   <svg:path
-    d="M60 34V38"
+    d="M27 52H82 M35 39H43 M35 45H40 M35 58H43 M35 64H40"
+    class="fine-line"
+  />
+  <svg:rect x="88" y="34" width="10" height="19" class="hmi-bezel" />
+  <svg:rect x="90" y="37" width="6" height="8" class="hmi-screen" />
+  <svg:path d="M104 57H120V63H104" class="process-nozzle" />
+  <svg:rect x="29" y="83" width="44" height="9" class="nameplate" />
+  <svg:text x="51" y="89.5" text-anchor="middle" class="equipment-engraving">
+    WATER SUPPLY
+  </svg:text>
+  } @case('pipe') {
+  <svg:rect x="0" y="54" width="120" height="12" class="process-nozzle" />
+  <svg:rect x="20" y="48" width="5" height="24" class="flange" />
+  <svg:rect x="95" y="48" width="5" height="24" class="flange" />
+  <svg:path d="M22 51V53 M22 67V69 M97 51V53 M97 67V69" class="fine-line" />
+  } @case('counter') {
+  <svg:path d="M47 87V114H77" class="frame-member" />
+  <svg:rect x="13" y="30" width="96" height="57" rx="1" class="cabinet-panel" />
+  <svg:rect x="22" y="40" width="77" height="28" rx=".5" class="hmi-bezel" />
+  <svg:text x="61" y="60" text-anchor="middle" class="counter-display">
+    {{preview()?'0024':value('ProductCount')}}
+  </svg:text>
+  <svg:path d="M25 78H54 M82 77H89 M94 77H101" class="fine-line" />
+  } @case('photo-sensor') {
+  <svg:path d="M63 80V110H94" class="frame-member" />
+  <svg:rect x="47" y="36" width="39" height="44" rx="1" class="drive-housing" />
+  <svg:rect x="51" y="43" width="8" height="23" class="camera-lens" />
+  <svg:circle cx="55" cy="49" r="2" class="lens-glass" />
+  <svg:circle cx="55" cy="60" r="2" class="lens-glass" />
+  <svg:path d="M0 60H47" class="scan-line" />
+  <svg:rect
+    x="67"
+    y="42"
+    width="10"
+    height="5"
+    class="stack-light"
+    [class.energized]="state()?.values?.['Detection']"
+  />
+  <svg:path d="M86 69H100V90" class="outline" />
+  } @default {
+  <svg:path d="M60 81V106H83" class="frame-member" />
+  <svg:path d="M0 57H28V63H0 M92 57H120V63H92" class="process-nozzle" />
+  <svg:circle cx="60" cy="55" r="29" class="instrument-case" />
+  <svg:circle cx="60" cy="55" r="25" class="instrument-face" />
+  @for(angle of [-75,-50,-25,0,25,50,75];track angle){
+  <svg:path
+    d="M60 33V37"
     [attr.transform]="'rotate('+angle+' 60 55)'"
-    stroke="#7294a8"
-    stroke-width="1.5"
+    class="dial-tick"
   />
   }
-  <svg:path
-    d="M60 55L75 43"
-    stroke="#319d9c"
-    stroke-width="2"
-    stroke-linecap="round"
-  />
-  <svg:circle cx="60" cy="55" r="3" fill="#4d7e90" />
-  <svg:rect x="40" y="64" width="40" height="10" rx="2" fill="#d9e9ef" />
-  <svg:text
-    x="60"
-    y="72"
-    text-anchor="middle"
-    fill="#527b8f"
-    font-size="7"
-    font-family="monospace"
-  >
-    {{type()==='level-sensor'?'LEVEL':type()==='flow-sensor'?'FLOW':type()==='photo-sensor'?'PHOTO':'PRESSURE'}}
+  <svg:path d="M60 55L73 41" class="dial-needle" />
+  <svg:circle cx="60" cy="55" r="2" class="tool-head" />
+  <svg:rect x="43" y="64" width="34" height="10" class="nameplate" />
+  <svg:text x="60" y="71" text-anchor="middle" class="equipment-engraving">
+    {{type()==='level-sensor'?'LEVEL':type()==='flow-sensor'?'FLOW':'PRESSURE'}}
   </svg:text>
   } }
 </svg:g>
