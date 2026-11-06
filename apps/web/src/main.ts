@@ -117,7 +117,7 @@ export class App {
       ),
   );
 
-  readonly equipmentScale = 1.5;
+  readonly equipmentScale = 1.35;
   canvasSize = signal({ width: 1400, height: 760 });
   private readonly destroyRef = inject(DestroyRef);
   zoom = signal(0.85);

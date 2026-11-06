@@ -37,7 +37,7 @@ test("larger symbols and moving products use the full live canvas; palette retur
   const art = conveyor.locator(".glyph-art");
   await expect
     .poll(async () => (await art.boundingBox())?.width ?? 0)
-    .toBeGreaterThan(140);
+    .toBeGreaterThan(130);
   const editorWidth = (await page.locator("svg.canvas").boundingBox())!.width;
   const editorSymbolWidth = (await art.boundingBox())!.width;
   await expectEquipmentInView(page);
