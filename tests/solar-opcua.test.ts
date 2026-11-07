@@ -168,6 +168,11 @@ it("OPC UA browses solar devices, publishes live KACO-style telemetry and valida
     });
     expect(fault.value.value).toBe(true);
     const storedNode = node("inv1", "ACPower");
+    const configurationNode =
+      "ns=2;s=project/solar-farm/simulation/WeatherConfiguration";
+    expect(
+      (await session.read({ nodeId: configurationNode })).value.value,
+    ).toBe("null");
     sim.control("stop");
     const renamed: Project = {
       ...structuredClone(solarDemo),
@@ -176,6 +181,20 @@ it("OPC UA browses solar devices, publishes live KACO-style telemetry and valida
     renamed.equipment.find((e) => e.id === "inv1")!.tag = "INV-RENAMED";
     sim.replace(renamed);
     ua.rebuild();
+    const configuration = await session.read({ nodeId: configurationNode });
+    expect(configuration.value.dataType).toBe(DataType.String);
+    expect(JSON.parse(String(configuration.value.value))).toEqual(
+      weatherFixture,
+    );
+    expect(
+      (
+        await session.write({
+          nodeId: configurationNode,
+          attributeId: AttributeIds.Value,
+          value: { value: { dataType: DataType.String, value: "null" } },
+        })
+      ).isGood(),
+    ).toBe(false);
     expect(
       (
         await session.read({
@@ -215,6 +234,31 @@ it("OPC UA browses solar devices, publishes live KACO-style telemetry and valida
       conditions.sunElevation,
       conditions.sunAzimuth,
     ]);
+    const changed = structuredClone(renamed);
+    changed.weather!.site.name = "Changed farm location";
+    changed.weather!.forecast!.samples[0].cloudCover = 75;
+    sim.replace(changed);
+    ua.rebuild();
+    expect(
+      JSON.parse(
+        String((await session.read({ nodeId: configurationNode })).value.value),
+      ),
+    ).toEqual(changed.weather);
+    changed.weather!.mode = "manual";
+    sim.replace(changed);
+    ua.rebuild();
+    expect(
+      JSON.parse(
+        String((await session.read({ nodeId: configurationNode })).value.value),
+      ),
+    ).toEqual(changed.weather);
+    const cleared = structuredClone(solarDemo);
+    delete cleared.weather;
+    sim.replace(cleared);
+    ua.rebuild();
+    expect(
+      (await session.read({ nodeId: configurationNode })).value.value,
+    ).toBe("null");
     await subscription.terminate();
     await session.close();
   } finally {

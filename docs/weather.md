@@ -49,3 +49,9 @@ Tests cover seasonal/geographic sun position, polar day/night, interpolation, no
 - [Open-Meteo geocoding API](https://open-meteo.com/en/docs/geocoding-api): place search and GeoNames attribution.
 - [NOAA solar-position equations](https://gml.noaa.gov/grad/solcalc/solareqns.PDF): approximate equation of time, declination, solar time and position.
 - [Open-Meteo terms](https://open-meteo.com/en/terms) and [licence](https://open-meteo.com/en/licence).
+
+## Automatic ThingsBoard location and forecast sync
+
+`Simulation.WeatherConfiguration` is a read-only OPC UA **String** containing the project's saved weather configuration as JSON (`mode`, `site`, `startTime`, and optional `forecast`). It publishes `"null"` when no weather configuration exists. The existing schema bounds forecast data to 192 hourly samples. Location and forecast are one value to prevent mixed configurations during updates. This tag describes the saved forecast; it does not download or refresh forecasts on a schedule.
+
+Subscribe to `WeatherConfiguration` under the Simulation mapping in ThingsBoard, using the same name as key and relative path. The existing uplink converter preserves the JSON string as telemetry on `Twynix Solar - Simulation`. A dashboard formatter can parse it to show the selected location, panel orientation, provider/retrieval time, and daily forecast summaries. Handle `null`, missing forecasts and malformed values explicitly, and escape site/provider text before rendering HTML. Changes applied in the simulator trigger subscription updates, including while stopped; replacing a project rebuilds the OPC UA address space, so the integration may need its normal reconnect/rescan interval. Save the project to retain the changes across a backend restart. Renaming the project still requires updating existing FQN-based ThingsBoard mapping patterns.

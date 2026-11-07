@@ -304,6 +304,24 @@ export async function createOpcua(sim: Simulation, options: UaOptions) {
         dataType: type === DataType.Boolean ? "Boolean" : "Double",
         value: { get: () => new Variant({ dataType: type, value: get() }) },
       });
+    // Publish location and saved forecast together so consumers never combine
+    // coordinates from one configuration with samples from another.
+    ns.addVariable({
+      componentOf: control,
+      browseName: "WeatherConfiguration",
+      nodeId: `s=project/${sim.project.id}/simulation/WeatherConfiguration`,
+      minimumSamplingInterval: 1000,
+      dataType: "String",
+      accessLevel: "CurrentRead",
+      userAccessLevel: "CurrentRead",
+      value: {
+        get: () =>
+          new Variant({
+            dataType: DataType.String,
+            value: JSON.stringify(sim.project.weather ?? null),
+          }),
+      },
+    });
   }
   rebuild();
   await server.start();
