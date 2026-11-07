@@ -15,6 +15,13 @@ docker compose --env-file .env.docker up --build -d --wait
 
 Replace the example IP with the **Docker host's address reachable by OPC UA clients**, not the container's private address. The helper creates `.env.docker` with unique operator and API credentials, restricted file permissions, and loopback-only web access. It never overwrites an existing file. No package installation is needed to run the helper. `.env.docker` is excluded from Git and the Docker build context; keep a protected backup.
 
+If Node.js is not installed on the host, use Docker to run the same helper instead of `npm run docker:setup` (Linux/macOS):
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work \
+  node:22.22.3-bookworm-slim node scripts/docker-setup.mjs --host 192.168.1.149
+```
+
 Open `http://localhost:3000` on the host. In the application, select **Access token** and enter the `API_TOKEN` from `.env.docker`. The API and WebSocket connection require it; the static login page remains accessible without a token.
 
 For LAN web access, set `WEB_BIND_ADDRESS` in `.env.docker` to the host's LAN IP and recreate the service. Use a TLS reverse proxy for remote access, forwarding WebSockets and the original Host header. A server reached over HTTP exposes the API token to that network, so use HTTPS for shared or untrusted networks.
