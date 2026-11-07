@@ -1,6 +1,12 @@
 # Twynix Factory Simulator
 
-A working local industrial simulator: Angular SVG engineering editor, authoritative fixed-step Node.js process runtime, SQLite project library, and a real independently accessible OPC UA server. No cloud or external service is used at runtime.
+A working local industrial simulator: Angular SVG engineering editor, authoritative fixed-step Node.js process runtime, SQLite project library, and a real independently accessible OPC UA server. Simulation runs locally; optional location search and forecast downloads use Open-Meteo. Manual weather and saved forecast replay work offline.
+
+**AI agents:** the stdio MCP adapter exposes equipment discovery, project templates/schema, validation, isolated previews, saved drafts and guarded runtime controls through the existing backend. Start the backend normally, then configure your MCP host using the [setup and tool guide](docs/mcp.md) and [client example](examples/mcp-client.json). Agents can save separate drafts without interrupting the active run. There is still one live runtime per backend; multiple concurrent live instances remain future work.
+
+The **Solar farm · KACO NX3** example adds three PV fields, one 100 kW and two 125 kW inverter models, and a grid meter. It simulates generation, cloud/shading effects, curtailment, startup, grid loss, thermal derating and energy accumulation. The main KACO-style tags are available as normal OPC UA variables, with engineering units and stable IDs; there is no Modbus dependency. See [solar equipment and OPC UA tags](docs/solar-opcua.md) for the connection settings, full tag list and modeling limits.
+
+In the solar project, open **Weather & location** while paused. Search for a place or enter coordinates, set panel tilt/direction, and select **Load 7-day forecast**. Choose a start time in UTC, save the project, then start. Predicted panel irradiance and air temperature drive generation; sun position and cloud cover appear in the live view. The saved forecast replays with simulation time and pauses at its end. Select **Manual conditions** to return to the array setpoints. See [location-based weather](docs/weather.md).
 
 ## Run
 

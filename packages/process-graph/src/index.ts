@@ -9,6 +9,36 @@ export function validateProject(p: Project): void {
     ids.add(e.id);
     tags.add(e.tag);
     const params = e.parameters;
+    if (e.type === "pv-array") {
+      if (
+        !(params["ratedPower"] > 0 && params["ratedPower"] <= 1000) ||
+        !(
+          params["nominalVoltage"] >= 250 && params["nominalVoltage"] <= 1000
+        ) ||
+        !(
+          params["temperatureCoefficient"] >= -0.01 &&
+          params["temperatureCoefficient"] <= 0
+        ) ||
+        !(params["noct"] >= 20 && params["noct"] <= 80) ||
+        !(params["cloudDepth"] >= 0 && params["cloudDepth"] <= 1) ||
+        !(params["cloudPeriod"] >= 1 && params["cloudPeriod"] <= 86400) ||
+        !(params["cloudPhase"] >= 0 && params["cloudPhase"] <= 1)
+      )
+        throw Error("Invalid PV array parameters");
+    }
+    if (e.type === "kaco-inverter") {
+      if (
+        ![100, 125].includes(params["ratedPower"]) ||
+        !(params["efficiency"] > 0 && params["efficiency"] <= 0.991) ||
+        !(params["startupTime"] >= 0 && params["startupTime"] <= 600) ||
+        !(
+          params["derateStart"] >= 25 &&
+          params["derateStart"] < params["derateStop"]
+        ) ||
+        !(params["derateStop"] <= 100)
+      )
+        throw Error("Invalid NX3 inverter parameters");
+    }
     for (const key of Object.keys(definitions[e.type].defaults)) {
       if (!(key in params)) throw Error(`Missing parameter ${key}`);
     }
@@ -118,6 +148,17 @@ export function validateConnection(
     (x.domain === "signal" && x.dataType !== y.dataType)
   )
     throw Error("Incompatible ports");
+  if (
+    x.domain === "electrical" &&
+    ["pv-array", "kaco-inverter", "grid-meter"].some(
+      (type) => a.type === type || b.type === type,
+    ) &&
+    !(
+      (a.type === "pv-array" && b.type === "kaco-inverter") ||
+      (a.type === "kaco-inverter" && b.type === "grid-meter")
+    )
+  )
+    throw Error("Solar connections must be PV DC → inverter → grid meter AC");
 }
 // Traversal ends at storage boundaries and uses visited IDs, so feedback loops never recurse.
 export function fluidPaths(p: Project, start: string): string[] {

@@ -432,3 +432,69 @@
   stroke: #678fa6;
   stroke-width: 0.8;
 }
+
+/* Solar equipment: technical elevations and restrained electrical colors. */
+.glyph-art .solar-frame {
+  fill: #c8d1d7;
+  stroke: #667a88;
+  stroke-width: 1;
+}
+.glyph-art .solar-module {
+  fill: #244b66;
+  stroke: #839cae;
+  stroke-width: 0.7;
+}
+.glyph-art .solar-cell-line {
+  fill: none;
+  stroke: #7893a7;
+  stroke-width: 0.45;
+}
+.glyph-art .inverter-header {
+  fill: #e9edf0;
+  stroke: #9baab4;
+  stroke-width: 0.6;
+}
+.glyph-art .inverter-brand {
+  fill: #415461;
+  font: 600 9px sans-serif;
+  letter-spacing: 0.5px;
+}
+.glyph-art .electrical-wire {
+  fill: none;
+  stroke: #526a7b;
+  stroke-width: 1.4;
+}
+.glyph-art .meter-screen {
+  fill: #e1e9df;
+  stroke: #95a28f;
+  stroke-width: 0.6;
+}
+.glyph-art .meter-digits {
+  fill: #304a3c;
+  font: 600 13px monospace;
+}
+.connection.electrical-line {
+  stroke: #566e80;
+  stroke-width: 1.6;
+}
+.connection.electrical-line.dc-line {
+  stroke: #957442;
+}
+.state-indicator.connected,
+.state-indicator.available {
+  fill: #52826c;
+}
+.state-indicator.starting,
+.state-indicator.limited,
+.state-indicator.standby {
+  fill: #aa844b;
+}
+.state-chip.connected,
+.state-chip.available {
+  fill: #e6eeea;
+}
+.state-chip.starting,
+.state-chip.limited,
+.state-chip.standby {
+  fill: #f2ede3;
+}

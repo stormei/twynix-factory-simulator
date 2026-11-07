@@ -1,6 +1,6 @@
 import { Component, input, output } from "@angular/core";
 import type { Equipment, EquipmentState } from "@twynix/shared-types";
-import { definitions } from "@twynix/equipment-models";
+import { definitions, portPosition } from "@twynix/equipment-models";
 import { EquipmentGlyph } from "./glyph";
 @Component({
   selector: "g[equipmentSymbol]",
@@ -63,10 +63,8 @@ import { EquipmentGlyph } from "./glyph";
     }
     @for (port of ports(); track port.id) {
       <svg:circle
-        [attr.cx]="
-          port.id === 'level' ? 60 : port.direction === 'input' ? 0 : 120
-        "
-        [attr.cy]="port.id === 'level' ? 120 : 60"
+        [attr.cx]="portPoint(port.id).x"
+        [attr.cy]="portPoint(port.id).y"
         r="3.5"
         class="port"
         (pointerdown)="$event.stopPropagation()"
@@ -85,6 +83,7 @@ export class EquipmentSymbol {
   selected = input(false);
   portClick = output<string>();
   ports = () => definitions[this.equipment().type].ports;
+  portPoint = (id: string) => portPosition(this.equipment().type, id);
   status() {
     return this.state()?.status ?? "stopped";
   }
@@ -93,6 +92,9 @@ export class EquipmentSymbol {
     if (!v) return "";
     const t = this.equipment().type;
     const n = (key: string) => Number(v[key] ?? 0).toFixed(1);
+    if (t === "pv-array") return n("DCPower") + " kW DC";
+    if (t === "kaco-inverter") return n("ACPower") + " kW AC";
+    if (t === "grid-meter") return n("ExportPower") + " kW export";
     if (t === "tank")
       return n("Level") + "% · " + Math.round(Number(v["Volume"])) + " L";
     if (t === "pump" || t === "pipe" || t === "source")

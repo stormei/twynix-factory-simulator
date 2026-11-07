@@ -32,7 +32,7 @@ test("workbench library categories, keyboard search, and running configuration l
   await search.clear();
   await expect(category).toHaveAttribute("aria-expanded", "false");
   await category.click();
-  await expect(page.locator(".library-thumbnail")).toHaveCount(17);
+  await expect(page.locator(".library-thumbnail")).toHaveCount(20);
   await page
     .locator('g[equipmentSymbol][data-equipment-id="machine"]')
     .click();

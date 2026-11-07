@@ -21,8 +21,9 @@ import type {
   Connection,
   ExperimentReport,
   ExperimentRequest,
+  WeatherConfig,
 } from "@twynix/shared-types";
-import { definitions } from "@twynix/equipment-models";
+import { definitions, portPosition } from "@twynix/equipment-models";
 import { equipment } from "../../../examples/water-treatment";
 import { EquipmentGlyph, GraphicsDefinitions } from "./glyph";
 import { EquipmentSymbol } from "./symbol";
@@ -74,7 +75,17 @@ export class App {
   projects = signal<{ id: string; name: string }[]>([]);
   showProjects = signal(false);
   tab = signal("events");
-  view = signal<"drawing" | "io" | "experiments">("drawing");
+  view = signal<"drawing" | "io" | "experiments" | "weather">("drawing");
+  weatherBusy = signal(false);
+  weatherSearch = "";
+  weatherResults = signal<
+    { name: string; latitude: number; longitude: number }[]
+  >([]);
+  weatherName = "";
+  weatherLatitude: number | null = null;
+  weatherLongitude: number | null = null;
+  weatherTilt = 30;
+  weatherAzimuth = 180;
   ioSearch = signal("");
   ioFilter = signal("all");
   experimentBusy = signal(false);
@@ -131,7 +142,8 @@ export class App {
   );
 
   fullScreenLive = signal(false);
-  private previousView: "drawing" | "io" | "experiments" = "drawing";
+  private previousView: "drawing" | "io" | "experiments" | "weather" =
+    "drawing";
   private ownsFullscreen = false;
   equipmentScale = signal(this.readEquipmentScale());
   canvasSize = signal({ width: 1400, height: 760 });
@@ -300,6 +312,7 @@ export class App {
   async open(id: string) {
     await this.attempt(async () => {
       this.project.set(await this.api("projects/open", { id }));
+      if (this.view() === "weather") this.syncWeatherForm();
       this.selected.set([]);
       this.undoStack = [];
       this.redoStack = [];
@@ -324,6 +337,7 @@ export class App {
       p.connections = [];
       p.controllers = [];
       p.scenarios = [];
+      delete p.weather;
     });
   }
   duplicateProject() {
@@ -617,11 +631,15 @@ export class App {
     const a = this.project()?.equipment.find((e) => e.id === c.from),
       b = this.project()?.equipment.find((e) => e.id === c.to);
     if (!a || !b) return "";
-    const x = a.x + (c.fromPort === "level" ? 60 : 120) * this.equipmentScale(),
-      y = a.y + (c.fromPort === "level" ? 120 : 60) * this.equipmentScale(),
-      tx = b.x,
-      ty = b.y + 60 * this.equipmentScale();
-    return `M${x} ${y}H${(x + tx) / 2}V${ty}H${tx}`;
+    const from = portPosition(a.type, c.fromPort),
+      to = portPosition(b.type, c.toPort);
+    const x = a.x + from.x * this.equipmentScale(),
+      y = a.y + from.y * this.equipmentScale(),
+      tx = b.x + to.x * this.equipmentScale(),
+      ty = b.y + to.y * this.equipmentScale();
+    const feeder = b.type === "grid-meter" ? Number(c.toPort.slice(2)) : 0;
+    const bend = (x + tx) / 2 + (feeder ? (feeder - 2) * 20 : 0);
+    return `M${x} ${y}H${bend}V${ty}H${tx}`;
   }
   editRemoveConnection(id: string) {
     this.edit((p) => {
@@ -714,9 +732,108 @@ export class App {
       this.project.set(await this.api("project"));
     });
   }
-  async switchView(view: "drawing" | "io" | "experiments") {
+  async switchView(view: "drawing" | "io" | "experiments" | "weather") {
     this.view.set(view);
+    if (view === "weather") this.syncWeatherForm();
     if (view === "experiments") await this.refreshExperiments();
+  }
+  syncWeatherForm() {
+    const site = this.project()?.weather?.site;
+    this.weatherName = site?.name ?? "";
+    this.weatherLatitude = site?.latitude ?? null;
+    this.weatherLongitude = site?.longitude ?? null;
+    this.weatherTilt = site?.tilt ?? 30;
+    this.weatherAzimuth = site?.azimuth ?? 180;
+    this.weatherResults.set([]);
+  }
+  hasSolarEquipment() {
+    return (
+      this.project()?.equipment.some(
+        (e) => e.type === "pv-array" || e.type === "kaco-inverter",
+      ) ?? false
+    );
+  }
+  async searchWeatherLocation() {
+    this.weatherBusy.set(true);
+    await this.attempt(async () => {
+      this.weatherResults.set(
+        await this.api(
+          "weather/locations?query=" +
+            encodeURIComponent(this.weatherSearch.trim()),
+        ),
+      );
+      if (!this.weatherResults().length)
+        this.notice.set(
+          "No matching locations. Try a nearby city or enter coordinates.",
+        );
+    });
+    this.weatherBusy.set(false);
+  }
+  chooseWeatherLocation(site: {
+    name: string;
+    latitude: number;
+    longitude: number;
+  }) {
+    this.weatherName = site.name;
+    this.weatherLatitude = site.latitude;
+    this.weatherLongitude = site.longitude;
+    this.weatherResults.set([]);
+  }
+  async downloadWeather() {
+    if (this.runtime()?.status === "running") return;
+    const projectId = this.project()?.id;
+    this.weatherBusy.set(true);
+    await this.attempt(async () => {
+      const config = await this.api<WeatherConfig>("weather/forecast", {
+        name: this.weatherName,
+        latitude: this.weatherLatitude,
+        longitude: this.weatherLongitude,
+        tilt: this.weatherTilt,
+        azimuth: this.weatherAzimuth,
+      });
+      if (
+        this.project()?.id !== projectId ||
+        this.runtime()?.status === "running"
+      )
+        throw Error(
+          "Project changed while downloading. Pause and load the forecast again.",
+        );
+      await this.applyWeather(config);
+    });
+    this.weatherBusy.set(false);
+  }
+  async applyWeather(config: WeatherConfig) {
+    if (this.runtime()?.status === "running") return;
+    const before = structuredClone(this.project()!);
+    const p = structuredClone(before);
+    p.weather = structuredClone(config);
+    this.project.set(p);
+    await this.commit(before);
+  }
+  async weatherMode(mode: "manual" | "forecast") {
+    const weather = this.project()?.weather;
+    if (weather)
+      await this.attempt(() => this.applyWeather({ ...weather, mode }));
+  }
+  async weatherStart(value: string) {
+    const weather = this.project()?.weather;
+    if (weather)
+      await this.attempt(async () => {
+        const date = new Date(value.endsWith("Z") ? value : value + ":00Z");
+        if (!Number.isFinite(date.getTime()))
+          throw Error("Choose a valid forecast start time");
+        await this.applyWeather({ ...weather, startTime: date.toISOString() });
+      });
+  }
+  weatherDate(time: number) {
+    return new Date(time * 1000).toISOString().slice(0, 16).replace("T", " ");
+  }
+  weatherOwns(item: Equipment, tag: string) {
+    return (
+      this.project()?.weather?.mode === "forecast" &&
+      item.type === "pv-array" &&
+      ["IrradianceSetpoint", "AmbientTemperature"].includes(tag)
+    );
   }
   async refreshExperiments() {
     await this.attempt(async () => {
@@ -839,6 +956,20 @@ export class App {
           "material"
       : false;
   }
+  isElectricalConnection(c: Connection) {
+    const e = this.project()?.equipment.find((e) => e.id === c.from);
+    return (
+      !!e &&
+      definitions[e.type].ports.find((p) => p.id === c.fromPort)?.domain ===
+        "electrical"
+    );
+  }
+  isDcConnection(c: Connection) {
+    return (
+      this.project()?.equipment.find((e) => e.id === c.from)?.type ===
+      "pv-array"
+    );
+  }
   tags = () =>
     this.selectedEquipment()
       ? definitions[this.selectedEquipment()!.type].tags
@@ -867,11 +998,24 @@ export class App {
       filter: "Filter time (s)",
       delay: "Delay (s)",
       rejectRate: "Reject fraction",
+      nominalVoltage: "Nominal DC voltage (V)",
+      temperatureCoefficient: "Power coefficient (1/°C)",
+      noct: "Nominal cell temperature (°C)",
+      cloudDepth: "Cloud attenuation (0–1)",
+      cloudPeriod: "Cloud period (s)",
+      cloudPhase: "Cloud phase (0–1)",
+      efficiency: "Conversion efficiency (0–1)",
+      startupTime: "Grid qualification time (s)",
+      derateStart: "Derating starts (°C)",
+      derateStop: "Derating reaches zero (°C)",
     };
     const label = key.replace(/([a-z])([A-Z])/g, "$1 $2");
     return units[key] ?? label[0].toUpperCase() + label.slice(1);
   }
   faultChoices(item: Equipment): Equipment["faults"] {
+    if (item.type === "kaco-inverter")
+      return ["trip", "fail-start", "overheat"];
+    if (item.type === "grid-meter") return ["trip"];
     if (item.type === "valve") return ["stuck-open", "stuck-closed", "leak"];
     if (item.type.includes("sensor")) return ["stuck", "drift", "invalid"];
     if (["pump", "motor"].includes(item.type))

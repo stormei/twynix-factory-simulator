@@ -17,6 +17,9 @@ export const equipmentTypes = [
   "buffer",
   "inspection",
   "sink",
+  "pv-array",
+  "kaco-inverter",
+  "grid-meter",
 ] as const;
 export type EquipmentType = (typeof equipmentTypes)[number];
 export type Quality = "Good" | "Bad" | "Uncertain";
@@ -70,11 +73,75 @@ export const connectionSchema = z.object({
   toPort: z.string(),
 });
 export type Connection = z.infer<typeof connectionSchema>;
+export const solarSiteSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  latitude: z.number().finite().min(-90).max(90),
+  longitude: z.number().finite().min(-180).max(180),
+  tilt: z.number().finite().min(0).max(90),
+  azimuth: z.number().finite().min(0).max(360),
+});
+export type SolarSite = z.infer<typeof solarSiteSchema>;
+export const forecastSchema = z
+  .object({
+    provider: z.literal("Open-Meteo"),
+    fetchedAt: z.iso.datetime(),
+    samples: z
+      .array(
+        z.object({
+          time: z.number().int().min(0).max(4102444800),
+          irradiance: z.number().finite().min(0).max(2200),
+          temperature: z.number().finite().min(-90).max(65),
+          cloudCover: z.number().finite().min(0).max(100),
+        }),
+      )
+      .min(2)
+      .max(192),
+  })
+  .superRefine((forecast, ctx) => {
+    if (
+      forecast.samples.some(
+        (s, i) => i > 0 && s.time !== forecast.samples[i - 1].time + 3600,
+      )
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Forecast samples must be consecutive hourly UTC values",
+      });
+  });
+export const weatherSchema = z
+  .object({
+    mode: z.enum(["manual", "forecast"]),
+    site: solarSiteSchema,
+    startTime: z.iso.datetime(),
+    forecast: forecastSchema.optional(),
+  })
+  .superRefine((weather, ctx) => {
+    if (weather.mode !== "forecast") return;
+    const samples = weather.forecast?.samples;
+    const start = Date.parse(weather.startTime) / 1000;
+    if (!samples || start < samples[0].time || start >= samples.at(-1)!.time)
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Forecast mode needs saved weather data and a start time within its coverage",
+      });
+  });
+export type WeatherConfig = z.infer<typeof weatherSchema>;
+export interface WeatherConditions {
+  time: string;
+  irradiance: number;
+  temperature: number;
+  cloudCover: number;
+  sunElevation: number;
+  sunAzimuth: number;
+  exhausted: boolean;
+}
 export const projectSchema = z.object({
   schemaVersion: z.literal(1),
   id: z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/),
   name: z.string().min(1).max(100),
   seed: z.number().int().min(1).max(2147483647),
+  weather: weatherSchema.optional(),
   equipment: z.array(equipmentSchema).max(500),
   connections: z.array(connectionSchema).max(2000),
   controllers: z.array(
@@ -130,12 +197,22 @@ export interface Snapshot {
   states: Record<string, EquipmentState>;
   events: RuntimeEvent[];
   production: ProductionMetrics | null;
+  solar: SolarMetrics | null;
+  weather: WeatherConditions | null;
   opcua: {
     endpoint: string;
     sessions: number;
     running: boolean;
     secure: boolean;
   };
+}
+export interface SolarMetrics {
+  dcPower: number;
+  acPower: number;
+  exportPower: number;
+  energy: number;
+  online: number;
+  inverters: number;
 }
 export interface SimulationContext {
   dt: number;

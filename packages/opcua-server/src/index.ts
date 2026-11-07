@@ -17,6 +17,9 @@ import {
 } from "node-opcua";
 import type { Simulation } from "@twynix/simulation-core";
 import { definitions } from "@twynix/equipment-models";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { X509Certificate } from "node:crypto";
 export interface UaOptions {
   port: number;
   hostname: string;
@@ -34,6 +37,17 @@ export async function createOpcua(sim: Simulation, options: UaOptions) {
     rootFolder: options.certificateDir,
     automaticallyAcceptUnknownCertificate: options.dev,
   });
+  // Preserve a trusted server identity across host renames; do not rotate its certificate.
+  const certificateFile = resolve(
+    options.certificateDir,
+    "own/certs/certificate.pem",
+  );
+  const applicationUri =
+    (existsSync(certificateFile)
+      ? new X509Certificate(
+          readFileSync(certificateFile),
+        ).subjectAltName?.match(/(?:^|, )URI:([^,]+)/)?.[1]
+      : undefined) ?? "urn:twynix:factory-simulator:server";
   const server = new OPCUAServer({
     port: options.port,
     hostname: options.hostname,
@@ -41,6 +55,7 @@ export async function createOpcua(sim: Simulation, options: UaOptions) {
     resourcePath: "",
     serverCertificateManager: certificateManager,
     userCertificateManager: certificateManager,
+    serverInfo: { applicationUri },
     buildInfo: {
       productName: "Twynix Factory Simulator",
       manufacturerName: "Twynix",
@@ -200,6 +215,61 @@ export async function createOpcua(sim: Simulation, options: UaOptions) {
       ["Running", DataType.Boolean, () => sim.status === "running"],
       ["SimulationTime", DataType.Double, () => sim.time],
       ["SpeedMultiplier", DataType.Double, () => sim.speed],
+      [
+        "ForecastWeatherActive",
+        DataType.Boolean,
+        () => sim.project.weather?.mode === "forecast",
+      ],
+      [
+        "ForecastExhausted",
+        DataType.Boolean,
+        () => sim.weatherConditions()?.exhausted ?? false,
+      ],
+      [
+        "WeatherUnixTime",
+        DataType.Double,
+        () =>
+          Date.parse(sim.weatherConditions()?.time ?? "1970-01-01T00:00:00Z") /
+          1000,
+      ],
+      [
+        "WeatherIrradiance",
+        DataType.Double,
+        () => sim.weatherConditions()?.irradiance ?? 0,
+      ],
+      [
+        "WeatherTemperature",
+        DataType.Double,
+        () => sim.weatherConditions()?.temperature ?? 0,
+      ],
+      [
+        "WeatherCloudCover",
+        DataType.Double,
+        () => sim.weatherConditions()?.cloudCover ?? 0,
+      ],
+      [
+        "SunElevation",
+        DataType.Double,
+        () => sim.weatherConditions()?.sunElevation ?? 0,
+      ],
+      [
+        "SunAzimuth",
+        DataType.Double,
+        () => sim.weatherConditions()?.sunAzimuth ?? 0,
+      ],
+      ["SolarDCPower", DataType.Double, () => sim.solarMetrics()?.dcPower ?? 0],
+      ["SolarACPower", DataType.Double, () => sim.solarMetrics()?.acPower ?? 0],
+      [
+        "GridExportPower",
+        DataType.Double,
+        () => sim.solarMetrics()?.exportPower ?? 0,
+      ],
+      ["SolarEnergy", DataType.Double, () => sim.solarMetrics()?.energy ?? 0],
+      [
+        "InvertersOnline",
+        DataType.Double,
+        () => sim.solarMetrics()?.online ?? 0,
+      ],
       [
         "GoodOutput",
         DataType.Double,

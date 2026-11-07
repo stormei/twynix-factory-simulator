@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "twynix-simulator": {
+      "command": "node",
+      "args": [
+        "--import",
+        "/absolute/path/to/factory-simulator/node_modules/tsx/dist/loader.mjs",
+        "--env-file-if-exists=/absolute/path/to/factory-simulator/.env",
+        "/absolute/path/to/factory-simulator/apps/mcp/src/main.ts"
+      ],
+      "env": {
+        "TWYNIX_BACKEND_URL": "http://127.0.0.1:3000"
+      }
+    }
+  }
+}

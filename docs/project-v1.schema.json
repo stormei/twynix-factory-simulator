@@ -20,6 +20,124 @@
       "minimum": 1,
       "maximum": 2147483647
     },
+    "weather": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "forecast"
+          ]
+        },
+        "site": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "latitude": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "longitude": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "tilt": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 90
+            },
+            "azimuth": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360
+            }
+          },
+          "required": [
+            "name",
+            "latitude",
+            "longitude",
+            "tilt",
+            "azimuth"
+          ],
+          "additionalProperties": false
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        },
+        "forecast": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "Open-Meteo"
+            },
+            "fetchedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            },
+            "samples": {
+              "minItems": 2,
+              "maxItems": 192,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "time": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4102444800
+                  },
+                  "irradiance": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2200
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 65
+                  },
+                  "cloudCover": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                },
+                "required": [
+                  "time",
+                  "irradiance",
+                  "temperature",
+                  "cloudCover"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "provider",
+            "fetchedAt",
+            "samples"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "mode",
+        "site",
+        "startTime"
+      ],
+      "additionalProperties": false
+    },
     "equipment": {
       "maxItems": 500,
       "type": "array",
@@ -49,7 +167,10 @@
               "material-source",
               "buffer",
               "inspection",
-              "sink"
+              "sink",
+              "pv-array",
+              "kaco-inverter",
+              "grid-meter"
             ]
           },
           "tag": {

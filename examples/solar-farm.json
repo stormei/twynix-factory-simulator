@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "id": "solar-farm",
+  "name": "Solar Farm · KACO NX3",
+  "seed": 2026,
+  "equipment": [
+    {
+      "id": "pv1",
+      "type": "pv-array",
+      "tag": "PV-101",
+      "label": "Panel field 1 · 140 kWp",
+      "x": 80,
+      "y": 80,
+      "mode": "manual",
+      "parameters": {
+        "ratedPower": 140,
+        "nominalVoltage": 700,
+        "temperatureCoefficient": -0.0035,
+        "noct": 45,
+        "cloudDepth": 0.15,
+        "cloudPeriod": 120,
+        "cloudPhase": 0
+      },
+      "commands": {
+        "IrradianceSetpoint": 1000,
+        "AmbientTemperature": 20,
+        "ShadingPercent": 0
+      },
+      "faults": []
+    },
+    {
+      "id": "inv1",
+      "type": "kaco-inverter",
+      "tag": "INV-101",
+      "label": "blueplanet 100 NX3",
+      "x": 410,
+      "y": 80,
+      "mode": "external",
+      "parameters": {
+        "ratedPower": 100,
+        "efficiency": 0.987,
+        "startupTime": 10,
+        "rampTime": 5,
+        "derateStart": 55,
+        "derateStop": 80
+      },
+      "commands": {
+        "RunCommand": true,
+        "PowerLimitPercent": 100,
+        "PowerLimitEnabled": false
+      },
+      "faults": []
+    },
+    {
+      "id": "pv2",
+      "type": "pv-array",
+      "tag": "PV-102",
+      "label": "Panel field 2 · 160 kWp",
+      "x": 80,
+      "y": 460,
+      "mode": "manual",
+      "parameters": {
+        "ratedPower": 160,
+        "nominalVoltage": 700,
+        "temperatureCoefficient": -0.0035,
+        "noct": 45,
+        "cloudDepth": 0.15,
+        "cloudPeriod": 120,
+        "cloudPhase": 0.08
+      },
+      "commands": {
+        "IrradianceSetpoint": 1000,
+        "AmbientTemperature": 20,
+        "ShadingPercent": 0
+      },
+      "faults": []
+    },
+    {
+      "id": "inv2",
+      "type": "kaco-inverter",
+      "tag": "INV-102",
+      "label": "blueplanet 125 NX3",
+      "x": 410,
+      "y": 460,
+      "mode": "external",
+      "parameters": {
+        "ratedPower": 125,
+        "efficiency": 0.987,
+        "startupTime": 10,
+        "rampTime": 5,
+        "derateStart": 55,
+        "derateStop": 80
+      },
+      "commands": {
+        "RunCommand": true,
+        "PowerLimitPercent": 100,
+        "PowerLimitEnabled": false
+      },
+      "faults": []
+    },
+    {
+      "id": "pv3",
+      "type": "pv-array",
+      "tag": "PV-103",
+      "label": "Panel field 3 · 160 kWp",
+      "x": 80,
+      "y": 840,
+      "mode": "manual",
+      "parameters": {
+        "ratedPower": 160,
+        "nominalVoltage": 700,
+        "temperatureCoefficient": -0.0035,
+        "noct": 45,
+        "cloudDepth": 0.15,
+        "cloudPeriod": 120,
+        "cloudPhase": 0.16
+      },
+      "commands": {
+        "IrradianceSetpoint": 1000,
+        "AmbientTemperature": 20,
+        "ShadingPercent": 0
+      },
+      "faults": []
+    },
+    {
+      "id": "inv3",
+      "type": "kaco-inverter",
+      "tag": "INV-103",
+      "label": "blueplanet 125 NX3",
+      "x": 410,
+      "y": 840,
+      "mode": "external",
+      "parameters": {
+        "ratedPower": 125,
+        "efficiency": 0.987,
+        "startupTime": 10,
+        "rampTime": 5,
+        "derateStart": 55,
+        "derateStop": 80
+      },
+      "commands": {
+        "RunCommand": true,
+        "PowerLimitPercent": 100,
+        "PowerLimitEnabled": false
+      },
+      "faults": []
+    },
+    {
+      "id": "grid",
+      "type": "grid-meter",
+      "tag": "GM-101",
+      "label": "Site grid meter",
+      "x": 790,
+      "y": 460,
+      "mode": "manual",
+      "parameters": {},
+      "commands": {
+        "GridConnected": true,
+        "SiteLoad": 10,
+        "GridVoltage": 400,
+        "GridFrequency": 50
+      },
+      "faults": []
+    }
+  ],
+  "connections": [
+    {
+      "id": "dc-1",
+      "from": "pv1",
+      "fromPort": "out",
+      "to": "inv1",
+      "toPort": "in"
+    },
+    {
+      "id": "ac-1",
+      "from": "inv1",
+      "fromPort": "out",
+      "to": "grid",
+      "toPort": "in1"
+    },
+    {
+      "id": "dc-2",
+      "from": "pv2",
+      "fromPort": "out",
+      "to": "inv2",
+      "toPort": "in"
+    },
+    {
+      "id": "ac-2",
+      "from": "inv2",
+      "fromPort": "out",
+      "to": "grid",
+      "toPort": "in2"
+    },
+    {
+      "id": "dc-3",
+      "from": "pv3",
+      "fromPort": "out",
+      "to": "inv3",
+      "toPort": "in"
+    },
+    {
+      "id": "ac-3",
+      "from": "inv3",
+      "fromPort": "out",
+      "to": "grid",
+      "toPort": "in3"
+    }
+  ],
+  "controllers": [],
+  "scenarios": []
+}

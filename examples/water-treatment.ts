@@ -1,5 +1,5 @@
 import type { Project, Equipment, EquipmentType } from "@twynix/shared-types";
-import { definitions } from "@twynix/equipment-models";
+import { definitions, defaultCommands } from "@twynix/equipment-models";
 export function equipment(
   id: string,
   type: EquipmentType,
@@ -19,11 +19,7 @@ export function equipment(
     mode: "manual",
     parameters: { ...definitions[type].defaults, ...params },
     commands: {
-      ...Object.fromEntries(
-        definitions[type].tags
-          .filter((t) => t.writable)
-          .map((t) => [t.name, t.name === "SpeedSetpoint" ? 100 : false]),
-      ),
+      ...defaultCommands(type),
       ...commands,
     },
     faults: [],

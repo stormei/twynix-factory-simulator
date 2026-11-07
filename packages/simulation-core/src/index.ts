@@ -15,6 +15,8 @@ import { validateProject, fluidPaths } from "@twynix/process-graph";
 import { command, evaluateControllers } from "@twynix/control-engine";
 import { applyScenarios } from "@twynix/scenario-engine";
 import { MaterialRuntime } from "./material";
+import { stepSolar, solarMetrics } from "./solar";
+import { weatherAt } from "./weather";
 export class Simulation {
   private material!: MaterialRuntime;
   readonly dt = 0.1;
@@ -91,6 +93,7 @@ export class Simulation {
       this.accumulator = 0;
       this.event(`Simulation ${this.status}`);
     }
+    this.revision++;
   }
   submit(id: string, tag: string, value: Value, source: "ui" | "opcua"): void {
     command(this.project, id, tag, value, source);
@@ -126,13 +129,25 @@ export class Simulation {
       return;
     }
     let steps = 0;
-    while (this.accumulator + 1e-9 >= this.dt && steps < 50) {
+    while (
+      this.status === "running" &&
+      this.accumulator + 1e-9 >= this.dt &&
+      steps < 50
+    ) {
       this.step();
       this.accumulator -= this.dt;
       steps++;
     }
   }
   step(): void {
+    if (weatherAt(this.project, this.time)?.exhausted) {
+      this.status = "paused";
+      this.event(
+        "Saved weather forecast ended. Load a new forecast or switch to manual weather.",
+        "warning",
+      );
+      return;
+    }
     const p = this.project;
     const c = { dt: this.dt, time: this.time, random: this.random };
     applyScenarios(p, this.time, this.dt, (m) => {
@@ -257,12 +272,19 @@ export class Simulation {
       }
     }
     this.material.step(p, next, c);
+    stepSolar(p, prev, next, c);
     this.states = next;
     this.sourceTimestamp = new Date();
     this.time = Math.round((this.time + this.dt) * 10) / 10;
   }
   productionMetrics() {
     return this.material.metrics(this.project, this.states, this.time);
+  }
+  solarMetrics() {
+    return solarMetrics(this.project, this.states);
+  }
+  weatherConditions() {
+    return weatherAt(this.project, this.time);
   }
   snapshot(): Snapshot {
     return {
@@ -274,6 +296,8 @@ export class Simulation {
       events: [...this.events],
       opcua: { ...this.opcua },
       production: this.productionMetrics(),
+      solar: this.solarMetrics(),
+      weather: this.weatherConditions(),
     };
   }
 }

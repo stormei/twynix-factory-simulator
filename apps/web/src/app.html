@@ -103,8 +103,8 @@
       /><kbd>⌘ K</kbd>
     </div>
     <p class="hint">Drag to insert · Double-click to add</p>
-    @for(category of ['Manufacturing','Process','Instruments'];track category){
-    @if(categoryCount(category)||!search()){
+    @for(category of ['Manufacturing','Process','Instruments','Solar'];track
+    category){ @if(categoryCount(category)||!search()){
     <button
       class="category"
       [attr.aria-label]="category+' equipment'"
@@ -138,6 +138,7 @@
       <span class="eyebrow">Examples</span
       ><button (click)="open('production-line')">▸ Packaging line</button
       ><button (click)="open('water-treatment')">▸ Water treatment</button
+      ><button (click)="open('solar-farm')">▸ Solar farm · KACO NX3</button
       ><span class="status-dot good"></span>Local runtime
     </div>
   </aside>
@@ -157,6 +158,14 @@
         >
           Experiments
         </button>
+        @if(hasSolarEquipment()){
+        <button
+          [class.active]="view()==='weather'"
+          (click)="switchView('weather')"
+        >
+          Weather & location
+        </button>
+        }
       </div>
       @if(fullScreenLive()){
       <div class="live-view-caption">
@@ -202,7 +211,42 @@
         ><span>{{(zoom()*100).toFixed(0)}}%</span>
       </div>
     </div>
-    @if(runtime()?.production;as metrics){
+    @if(runtime()?.solar;as solar){
+    <div class="production-strip solar-strip" aria-label="Solar farm metrics">
+      <div>
+        <span>DC input</span
+        ><strong>{{solar.dcPower.toFixed(1)}} <small>kW</small></strong>
+      </div>
+      <div>
+        <span>AC generation</span
+        ><strong>{{solar.acPower.toFixed(1)}} <small>kW</small></strong>
+      </div>
+      <div>
+        <span>Grid export</span
+        ><strong>{{solar.exportPower.toFixed(1)}} <small>kW</small></strong>
+      </div>
+      <div>
+        <span>Generated energy</span
+        ><strong>{{solar.energy.toFixed(2)}} <small>kWh</small></strong>
+      </div>
+      <div>
+        <span>Inverters online</span
+        ><strong>{{solar.online}} / {{solar.inverters}}</strong>
+      </div>
+    </div>
+    } @if(runtime()?.weather;as weather){
+    <div class="weather-live-strip" aria-label="Live weather">
+      <strong>{{project()?.weather?.site?.name}}</strong>
+      <span>{{weather.time.slice(0,16).replace('T',' ')}} UTC</span>
+      <span>{{weather.irradiance.toFixed(0)}} W/m²</span
+      ><span>{{weather.temperature.toFixed(1)}} °C</span>
+      <span>Cloud {{weather.cloudCover.toFixed(0)}}%</span
+      ><span>Sun {{weather.sunElevation.toFixed(1)}}° elevation</span>
+      @if(weather.exhausted){<strong
+        >Forecast ended · load another forecast to continue</strong
+      >}
+    </div>
+    } @if(runtime()?.production;as metrics){
     <div class="production-strip" aria-label="Production metrics">
       <div>
         <span>Good output</span
@@ -246,7 +290,8 @@
     >
       <div class="drawing-heading">
         <span class="eyebrow"
-          >{{runtime()?.production?'Line 01':'Area 01'}}</span
+          >{{runtime()?.solar?'Solar generation':runtime()?.production?'Line
+          01':'Area 01'}}</span
         >
         <h1>{{project()?.name}}</h1>
         <p>
@@ -301,6 +346,8 @@
             class="connection"
             [class.signal-line]="c.fromPort==='level'"
             [class.material-line]="isMaterialConnection(c)"
+            [class.electrical-line]="isElectricalConnection(c)"
+            [class.dc-line]="isDcConnection(c)"
             marker-end="url(#arrow)"
             (dblclick)="$event.stopPropagation();editRemoveConnection(c.id)"
           >
@@ -321,7 +368,9 @@
         </g>
       </svg>
       <div class="canvas-legend">
-        <span><i class="legend-line"></i> Process flow</span
+        <span
+          ><i class="legend-line"></i> {{runtime()?.solar?'Electrical
+          connection':'Process flow'}}</span
         ><span><i class="legend-line dashed"></i> Instrument signal</span>
       </div>
       <div class="canvas-hint">
@@ -385,7 +434,7 @@
                 @if(row.tag.writable&&row.tag.type==='boolean'){<button
                   class="toggle"
                   [class.on]="row.value"
-                  [disabled]="row.equipment.mode!=='manual'"
+                  [disabled]="row.equipment.mode!=='manual'||weatherOwns(row.equipment,row.tag.name)"
                   [attr.aria-label]="'Toggle '+row.equipment.tag+' '+row.tag.name"
                   (click)="ioCommand(row.equipment.id,row.tag.name,!row.value)"
                 >
@@ -396,7 +445,7 @@
                   [min]="row.tag.min??0"
                   [max]="row.tag.max??100"
                   [value]="row.value"
-                  [disabled]="row.equipment.mode!=='manual'"
+                  [disabled]="row.equipment.mode!=='manual'||weatherOwns(row.equipment,row.tag.name)"
                   [attr.aria-label]="row.equipment.tag+' '+row.tag.name"
                   (change)="ioCommand(row.equipment.id,row.tag.name,+$any($event.target).value)"
                 />}@else{<span
@@ -428,6 +477,193 @@
           </tbody>
         </table>
       </div>
+    </div>
+    } @if(view()==='weather'){
+    <div class="workspace-panel weather-panel">
+      <div class="workspace-panel-heading">
+        <h1>Weather & location</h1>
+        <span
+          >{{project()?.weather?.mode==='forecast'?'Saved forecast':'Manual
+          weather'}}</span
+        >
+      </div>
+      <p class="weather-instruction">
+        Choose a location and panel orientation, then load a forecast. Applying
+        weather settings resets the simulation. Save the project to keep its
+        forecast.
+      </p>
+      <fieldset [disabled]="weatherBusy()||runtime()?.status==='running'">
+        <legend>Simulation site</legend>
+        <div class="weather-search">
+          <input
+            aria-label="Search weather location"
+            placeholder="City or place"
+            [(ngModel)]="weatherSearch"
+            (keydown.enter)="searchWeatherLocation()"
+          /><button
+            class="secondary-button"
+            (click)="searchWeatherLocation()"
+            [disabled]="weatherSearch.trim().length<2"
+          >
+            Search location
+          </button>
+        </div>
+        @if(weatherResults().length){
+        <div class="weather-locations" aria-label="Location results">
+          @for(result of weatherResults();track
+          result.name+result.latitude){<button
+            (click)="chooseWeatherLocation(result)"
+          >
+            {{result.name}} · {{result.latitude.toFixed(4)}},
+            {{result.longitude.toFixed(4)}}</button
+          >}
+        </div>
+        }
+        <div class="weather-form">
+          <label
+            >Location name<input
+              aria-label="Weather location name"
+              [(ngModel)]="weatherName"
+              maxlength="100"
+          /></label>
+          <label
+            >Latitude<input
+              aria-label="Weather latitude"
+              type="number"
+              min="-90"
+              max="90"
+              step="0.0001"
+              [(ngModel)]="weatherLatitude"
+          /></label>
+          <label
+            >Longitude<input
+              aria-label="Weather longitude"
+              type="number"
+              min="-180"
+              max="180"
+              step="0.0001"
+              [(ngModel)]="weatherLongitude"
+          /></label>
+          <label
+            >Panel tilt (°)<input
+              aria-label="Panel tilt"
+              type="number"
+              min="0"
+              max="90"
+              [(ngModel)]="weatherTilt"
+          /></label>
+          <label
+            >Panel direction (° from north)<input
+              aria-label="Panel azimuth"
+              type="number"
+              min="0"
+              max="360"
+              [(ngModel)]="weatherAzimuth"
+          /></label>
+          <div class="weather-fetch">
+            <button
+              class="primary-button"
+              (click)="downloadWeather()"
+              [disabled]="!weatherName.trim()||weatherLatitude===null||weatherLongitude===null"
+            >
+              {{weatherBusy()?'Loading…':'Load 7-day forecast'}}
+            </button>
+          </div>
+        </div>
+        <p class="muted">
+          Tilt: 0° flat, 90° vertical. Direction: 0° north, 90° east, 180°
+          south, 270° west.
+        </p>
+      </fieldset>
+      <p class="weather-attribution">
+        Weather:
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener"
+          >Open-Meteo</a
+        >
+        · Location search: GeoNames. Searches send the place name; forecasts
+        send coordinates and panel orientation. Internet is needed only to
+        download.
+      </p>
+      @if(project()?.weather;as config){
+      <section class="saved-weather">
+        <div class="section-caption">
+          <h2>{{config.site.name}}</h2>
+          <span
+            >{{config.site.latitude.toFixed(4)}},
+            {{config.site.longitude.toFixed(4)}} · {{config.site.tilt}}° tilt ·
+            {{config.site.azimuth}}° direction</span
+          >
+        </div>
+        <div class="weather-run-controls">
+          <label
+            >Weather source<select
+              aria-label="Weather source"
+              [ngModel]="config.mode"
+              (ngModelChange)="weatherMode($event)"
+              [disabled]="runtime()?.status==='running'||weatherBusy()"
+            >
+              <option value="manual">Manual conditions</option>
+              <option value="forecast" [disabled]="!config.forecast">
+                Saved forecast
+              </option>
+            </select></label
+          >
+          <label
+            >Simulation start (UTC)<input
+              aria-label="Forecast start time"
+              type="datetime-local"
+              [value]="config.startTime.slice(0,16)"
+              (change)="weatherStart($any($event.target).value)"
+              [disabled]="runtime()?.status==='running'||weatherBusy()"
+          /></label>
+        </div>
+        @if(config.forecast;as forecast){
+        <p>
+          Downloaded {{forecast.fetchedAt.slice(0,16).replace('T',' ')}} UTC ·
+          {{forecast.samples.length}} hourly samples · Replay works offline. The
+          simulation pauses when this forecast ends.
+        </p>
+        <div class="table-scroll weather-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Time (UTC)</th>
+                <th>Panel sunlight (W/m²)</th>
+                <th>Air (°C)</th>
+                <th>Cloud (%)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for(sample of forecast.samples;track sample.time){
+              <tr
+                [class.forecast-selected]="config.startTime.slice(0,13)===weatherDate(sample.time).replace(' ','T').slice(0,13)"
+              >
+                <td>{{weatherDate(sample.time)}}</td>
+                <td>{{sample.irradiance.toFixed(0)}}</td>
+                <td>{{sample.temperature.toFixed(1)}}</td>
+                <td>{{sample.cloudCover.toFixed(0)}}</td>
+                <td>
+                  <button
+                    (click)="weatherStart(weatherDate(sample.time).replace(' ','T'))"
+                    [disabled]="$last||runtime()?.status==='running'||weatherBusy()"
+                  >
+                    Start here
+                  </button>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
+      </section>
+      }@else{
+      <p>
+        Manual irradiance and temperature remain active until a forecast is
+        applied.
+      </p>
+      }
     </div>
     } @if(view()==='experiments'){
     <div class="experiments-panel workspace-panel">
@@ -753,7 +989,7 @@
         <span>{{tag.name}}</span>@if(tag.type==='boolean'){<button
           class="toggle"
           [class.on]="commandValue(tag.name)"
-          [disabled]="item.mode!=='manual'"
+          [disabled]="item.mode!=='manual'||weatherOwns(item,tag.name)"
           (click)="command(tag.name,!commandValue(tag.name))"
         >
           {{commandValue(tag.name)?'ON':'OFF'}}</button
@@ -761,10 +997,10 @@
           type="number"
           [min]="tag.min??0"
           [max]="tag.max??100"
-          [disabled]="item.mode!=='manual'"
+          [disabled]="item.mode!=='manual'||weatherOwns(item,tag.name)"
           [ngModel]="item.commands[tag.name]"
           (change)="command(tag.name,+$any($event.target).value)"
-          aria-label="Speed setpoint"
+          [attr.aria-label]="tag.name==='SpeedSetpoint'?'Speed setpoint':tag.name"
         />}
       </div>
       }@else{

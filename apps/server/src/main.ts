@@ -16,10 +16,13 @@ import { Simulation } from "@twynix/simulation-core";
 import { createOpcua } from "@twynix/opcua-server";
 import { demo } from "../../../examples/water-treatment.js";
 import { productionDemo } from "../../../examples/production-line.js";
+import { solarDemo } from "../../../examples/solar-farm.js";
 import { runExperiments } from "../../../packages/simulation-core/src/experiments.js";
 import { randomUUID } from "node:crypto";
 import { setImmediate as yieldImmediate } from "node:timers/promises";
 import { ProjectStore } from "./storage.js";
+import { WeatherService } from "./weather.js";
+import { registerAgentRoutes } from "./agent.js";
 const dir = resolve(process.env["DATA_DIR"] ?? "data");
 mkdirSync(dir, { recursive: true });
 const store = new ProjectStore(resolve(dir, "projects.sqlite"));
@@ -27,6 +30,7 @@ const savedProjects = store.list();
 if (!savedProjects.some((p) => p.id === demo.id)) store.save(demo);
 if (!savedProjects.some((p) => p.id === productionDemo.id))
   store.save(productionDemo);
+if (!savedProjects.some((p) => p.id === solarDemo.id)) store.save(solarDemo);
 // Preserve the last saved user project when upgrading; new installations open the production demo.
 const sim = new Simulation(
   store.get(savedProjects[0]?.id ?? productionDemo.id),
@@ -79,6 +83,12 @@ app.get("/api/catalog", () => definitions);
 app.get("/api/project", () => sim.project);
 app.get("/api/snapshot", () => sim.snapshot());
 app.get("/api/projects", () => store.list());
+registerAgentRoutes(app, sim, store, ua.rebuild);
+const weather = new WeatherService();
+app.get("/api/weather/locations", async (req) =>
+  weather.search(z.object({ query: z.string() }).parse(req.query).query),
+);
+app.post("/api/weather/forecast", async (req) => weather.forecast(req.body));
 let experimentRunning = false;
 app.get("/api/experiments", () => store.experiments(sim.project.id));
 app.post("/api/experiments", async (req) => {

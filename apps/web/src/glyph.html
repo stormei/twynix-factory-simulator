@@ -1,5 +1,86 @@
 <svg:g class="glyph-art">
-  @switch(type()) { @case('conveyor') {
+  @switch(type()) { @case('pv-array') {
+  <svg:path
+    d="M24 92V113 M96 92V113 M19 113H30 M90 113H102"
+    class="frame-member"
+  />
+  <svg:path d="M12 92H108 M12 99H108" class="guard-rail" />
+  <svg:rect x="7" y="19" width="106" height="75" rx="1" class="solar-frame" />
+  @for(x of [11,45,79];track x){ @for(y of [23,57];track y){
+  <svg:rect
+    [attr.x]="x"
+    [attr.y]="y"
+    width="30"
+    height="31"
+    class="solar-module"
+  />
+  @for(offset of [6,12,18,24];track offset){
+  <svg:path [attr.d]="'M'+(x+offset)+' '+y+'v31'" class="solar-cell-line" />
+  }
+  <svg:path [attr.d]="'M'+x+' '+(y+15.5)+'h30'" class="solar-cell-line" />
+  }}
+  <svg:path d="M113 60H120" class="electrical-wire" />
+  } @case('kaco-inverter') {
+  <svg:path d="M23 17V106 M97 17V106" class="frame-member" />
+  <svg:rect x="17" y="20" width="86" height="83" rx="2" class="cabinet-panel" />
+  <svg:rect
+    x="24"
+    y="26"
+    width="72"
+    height="18"
+    rx="1"
+    class="inverter-header"
+  />
+  <svg:text x="32" y="38" class="inverter-brand">KACO</svg:text>
+  <svg:circle
+    cx="87"
+    cy="35"
+    r="2"
+    class="stack-light"
+    [class.energized]="preview()||value('RunFeedback')>0"
+    [class.tripped]="value('FaultActive')>0"
+  />
+  <svg:path d="M24 51H96 M24 92H96" class="panel-seam" />
+  @for(x of [30,36,42,48,54,60,66,72,78,84,90];track x){
+  <svg:path [attr.d]="'M'+x+' 57V84'" class="drive-fin" />
+  }
+  <svg:rect x="44" y="93" width="32" height="6" class="nameplate" />
+  <svg:path
+    d="M0 60H17 M103 60H120 M34 103V111 M43 103V111 M77 103V111 M86 103V111"
+    class="electrical-wire"
+  />
+  <svg:text x="5" y="54" class="equipment-engraving">DC</svg:text>
+  <svg:text x="106" y="54" class="equipment-engraving">AC</svg:text>
+  } @case('grid-meter') {
+  <svg:rect
+    x="18"
+    y="10"
+    width="89"
+    height="104"
+    rx="1"
+    class="cabinet-panel"
+  />
+  <svg:rect x="27" y="20" width="71" height="48" rx="1" class="hmi-bezel" />
+  <svg:rect x="33" y="26" width="59" height="35" class="meter-screen" />
+  <svg:text x="62" y="40" text-anchor="middle" class="meter-digits">
+    {{preview()?'340.0':value('ExportPower').toFixed(1)}}
+  </svg:text>
+  <svg:text x="62" y="53" text-anchor="middle" class="equipment-engraving">
+    kW EXPORT
+  </svg:text>
+  @for(y of [24,48,72,96];track y){
+  <svg:path [attr.d]="'M0 '+y+'H18'" class="electrical-wire" />
+  }
+  <svg:path d="M35 79H90 M35 85H90 M35 91H90" class="vent-line" />
+  <svg:circle
+    cx="40"
+    cy="103"
+    r="2"
+    class="stack-light"
+    [class.energized]="preview()||value('GridAvailable')>0"
+  />
+  <svg:text x="52" y="106" class="equipment-engraving">3P · 50Hz</svg:text>
+  } @case('conveyor') {
   <svg:path d="M18 73V113H12 M102 73V113H108 M18 94H102" class="frame-member" />
   <svg:rect x="3" y="48" width="114" height="26" rx="2" class="steel-panel" />
   <svg:rect x="10" y="52" width="100" height="18" rx="7" class="belt-panel" />

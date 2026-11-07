@@ -12,6 +12,14 @@ export function command(
   const t = definitions[e.type].tags.find((t) => t.name === tag && t.writable);
   if (!t) throw Error("Variable is read-only");
   if (
+    p.weather?.mode === "forecast" &&
+    e.type === "pv-array" &&
+    ["IrradianceSetpoint", "AmbientTemperature"].includes(tag)
+  )
+    throw Error(
+      "Forecast weather owns irradiance and air temperature; switch weather to manual to override",
+    );
+  if (
     typeof value !== t.type ||
     typeof value === "string" ||
     (typeof value === "number" &&

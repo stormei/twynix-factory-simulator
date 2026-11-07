@@ -15,7 +15,7 @@ test("graphical production line, live I/O, fault schedules and persisted compari
   await expect(page.locator(".drawing-heading h1")).toHaveText(
     "Precision Packaging Line",
   );
-  await expect(page.locator(".library-thumbnail")).toHaveCount(17);
+  await expect(page.locator(".library-thumbnail")).toHaveCount(20);
   await page.getByRole("button", { name: "▶ Start", exact: true }).click();
   await request.post("/api/control", { data: { action: "start", speed: 20 } });
   await expect
