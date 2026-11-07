@@ -1,0 +1,59 @@
+name: Docker validation
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Build deployment and check Compose configuration
+        run: |
+          npm run docker:setup -- --host localhost
+          docker compose --env-file .env.docker config --quiet
+          docker compose --env-file .env.docker build
+      - name: Start container and verify persistent identity
+        run: |
+          docker compose --env-file .env.docker up -d --wait --wait-timeout 120
+          docker compose --env-file .env.docker exec -T simulator node docker/healthcheck.mjs
+          docker compose --env-file .env.docker exec -T simulator node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { createHash } from "node:crypto";
+            const p = "/app/data/pki/own/certs/certificate.pem";
+            console.log(createHash("sha256").update(readFileSync(p)).digest("hex"));
+          ' > /tmp/identity-before
+          docker compose --env-file .env.docker down
+          docker compose --env-file .env.docker up -d --wait --wait-timeout 120
+          docker compose --env-file .env.docker exec -T simulator node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { createHash } from "node:crypto";
+            const p = "/app/data/pki/own/certs/certificate.pem";
+            console.log(createHash("sha256").update(readFileSync(p)).digest("hex"));
+          ' > /tmp/identity-after
+          diff /tmp/identity-before /tmp/identity-after
+          docker compose --env-file .env.docker exec -T simulator node --input-type=module -e '
+            const r = await fetch("http://127.0.0.1:3000/");
+            if (!r.ok || !(await r.text()).includes("<app-root")) process.exit(1);
+            const denied = await fetch("http://127.0.0.1:3000/api/project");
+            if (denied.status !== 401) process.exit(1);
+          '
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose --env-file .env.docker logs --tail 150
+      - name: Cleanup
+        if: always()
+        run: docker compose --env-file .env.docker down -v || true

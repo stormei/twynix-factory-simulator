@@ -7,3 +7,6 @@ playwright-report/
 *.log
 
 .angular/
+
+.env.*
+!.env.example

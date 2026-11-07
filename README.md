@@ -92,9 +92,11 @@ Tests exercise deterministic process behavior, boundaries, hysteresis, fault eff
 ## Deployment
 
 ```sh
-# Populate .env with OPCUA_PASSWORD and API_TOKEN first.
-docker compose up --build -d
+npm run docker:setup -- --host YOUR_SERVER_IP
+docker compose --env-file .env.docker up --build -d --wait
 ```
+
+See the [Docker deployment guide](docs/docker.md) for LAN access, persistent storage, OPC UA certificates, backups, upgrades and MCP. The credential helper creates a separate private `.env.docker` file without changing your local `.env`.
 
 Web API binds locally by default. A non-loopback API bind requires API_TOKEN. In the browser click **Access token** to configure it. Put a TLS reverse proxy in front of remote web access. OPC UA uses its own encrypted transport. Compose publishes web access to loopback and OPC UA on 4840; change the binding deliberately for your installation.
 

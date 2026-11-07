@@ -21,7 +21,8 @@
     "start": "tsx --env-file-if-exists=.env apps/server/src/main.ts",
     "format": "prettier --write \"apps/**/*.{ts,html,scss,json}\" \"packages/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
     "setup": "node scripts/setup.mjs",
-    "mcp": "tsx --env-file-if-exists=.env apps/mcp/src/main.ts"
+    "mcp": "tsx --env-file-if-exists=.env apps/mcp/src/main.ts",
+    "docker:setup": "node scripts/docker-setup.mjs"
   },
   "dependencies": {
     "@angular/animations": "^22.2.4",
@@ -40,6 +41,7 @@
     "node-opcua": "^2.170.0",
     "pino": "^10.0.0",
     "rxjs": "^7.8.2",
+    "tsx": "^4.23.15",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -53,7 +55,6 @@
     "@types/ws": "^8.18.0",
     "concurrently": "^9.2.0",
     "prettier": "^3.6.0",
-    "tsx": "^4.20.0",
     "typescript": "~6.0.0",
     "vitest": "4.1.12"
   }

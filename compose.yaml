@@ -1,21 +1,31 @@
 services:
   simulator:
+    image: twynix-factory-simulator:local
     build:
       context: .
       dockerfile: docker/Dockerfile
+      target: runtime
+    init: true
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
-      - "4840:4840"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3000}:3000"
+      - "${OPCUA_BIND_ADDRESS:-0.0.0.0}:${OPCUA_PORT:-4840}:${OPCUA_PORT:-4840}"
     environment:
       HOST: 0.0.0.0
-      API_TOKEN: ${API_TOKEN:?Set API_TOKEN in .env}
-      OPCUA_PASSWORD: ${OPCUA_PASSWORD:?Set OPCUA_PASSWORD in .env}
+      PORT: "3000"
+      DATA_DIR: /app/data
+      API_TOKEN: ${API_TOKEN:?Run npm run docker:setup -- --host YOUR_SERVER_IP first}
+      OPCUA_PASSWORD: ${OPCUA_PASSWORD:?Set OPCUA_PASSWORD in your deployment env file}
       OPCUA_USER: ${OPCUA_USER:-operator}
-      OPCUA_HOST: ${OPCUA_HOST:-localhost}
+      OPCUA_HOST: ${OPCUA_HOST:?Set the hostname or IP reachable by OPC UA clients}
+      OPCUA_PORT: ${OPCUA_PORT:-4840}
       OPCUA_DEV: "false"
     volumes:
       - simulator-data:/app/data
-    stop_grace_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s
 volumes:
   simulator-data:
